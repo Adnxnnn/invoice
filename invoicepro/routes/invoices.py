@@ -657,8 +657,8 @@ def create_razorpay_order(token):
     if amount_paise < 100:
         return jsonify({"error": "Minimum payment amount is ₹1.00 (100 paise)"}), 400
 
-    key_id = current_app.config.get("RAZORPAY_KEY_ID", "rzp_test_TPB0DS6qkyq6PJ")
-    key_secret = current_app.config.get("RAZORPAY_KEY_SECRET", "XEZxF9ebnFg6ofGSc8evy3Eg")
+    key_id = (current_app.config.get("RAZORPAY_KEY_ID") or os.getenv("RAZORPAY_KEY_ID") or "rzp_test_TPB0DS6qkyq6PJ").strip().strip('"').strip("'")
+    key_secret = (current_app.config.get("RAZORPAY_KEY_SECRET") or os.getenv("RAZORPAY_KEY_SECRET") or "XEZxF9ebnFg6ofGSc8evy3Eg").strip().strip('"').strip("'")
 
     client = razorpay.Client(auth=(key_id, key_secret))
 
@@ -702,8 +702,8 @@ def verify_razorpay_payment(token):
     if not payment_id or not order_id or not signature:
         return jsonify({"success": False, "error": "Missing required signature verification fields"}), 400
 
-    key_id = current_app.config.get("RAZORPAY_KEY_ID", "rzp_test_TPB0DS6qkyq6PJ")
-    key_secret = current_app.config.get("RAZORPAY_KEY_SECRET", "XEZxF9ebnFg6ofGSc8evy3Eg")
+    key_id = (current_app.config.get("RAZORPAY_KEY_ID") or os.getenv("RAZORPAY_KEY_ID") or "rzp_test_TPB0DS6qkyq6PJ").strip().strip('"').strip("'")
+    key_secret = (current_app.config.get("RAZORPAY_KEY_SECRET") or os.getenv("RAZORPAY_KEY_SECRET") or "XEZxF9ebnFg6ofGSc8evy3Eg").strip().strip('"').strip("'")
 
     client = razorpay.Client(auth=(key_id, key_secret))
     params_dict = {

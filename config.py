@@ -43,8 +43,8 @@ class Config:
     WTF_CSRF_TIME_LIMIT = None
 
     # Razorpay Gateway Configuration
-    RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_test_TPB0DS6qkyq6PJ")
-    RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "XEZxF9ebnFg6ofGSc8evy3Eg")
+    RAZORPAY_KEY_ID = (os.getenv("RAZORPAY_KEY_ID") or "rzp_test_TPB0DS6qkyq6PJ").strip().strip('"').strip("'")
+    RAZORPAY_KEY_SECRET = (os.getenv("RAZORPAY_KEY_SECRET") or "XEZxF9ebnFg6ofGSc8evy3Eg").strip().strip('"').strip("'")
 
     # Email / SMTP
     MAIL_SERVER = os.getenv("MAIL_SERVER", "")
