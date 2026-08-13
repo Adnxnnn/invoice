@@ -213,6 +213,15 @@ class Invoice(TimestampMixin, db.Model):
         encoded = urllib.parse.quote(url)
         return f"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={encoded}"
 
+    @property
+    def formatted_payment_link(self):
+        if not self.payment_link:
+            return None
+        link = self.payment_link.strip()
+        if link.startswith(("http://", "https://", "upi://")):
+            return link
+        return f"https://{link}"
+
 
 class InvoiceItem(TimestampMixin, db.Model):
     __tablename__ = "invoice_items"

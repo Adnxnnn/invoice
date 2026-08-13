@@ -113,12 +113,29 @@
             <a href="{{ invoice.upi_payment_url }}" class="btn btn-pay" style="background:linear-gradient(135deg, #66e3ff, #00a8ff);color:#051923">⚡ Pay via UPI (GPay/PhonePe)</a>
             <button onclick="document.getElementById('upiQrModal').style.display='flex'" class="btn btn-print">📱 Scan UPI QR</button>
             {% endif %}
-            {% if invoice.payment_link and invoice.status not in ['Paid', 'Cancelled'] %}
-            <a href="{{ invoice.payment_link }}" target="_blank" class="btn btn-pay">💳 Pay Online Now</a>
+            {% if invoice.formatted_payment_link and invoice.status not in ['Paid', 'Cancelled'] %}
+            <a href="{{ invoice.formatted_payment_link }}" target="_blank" rel="noopener" class="btn btn-pay">💳 Pay Online Now</a>
+            {% endif %}
+            {% if invoice.status not in ['Paid', 'Cancelled'] %}
+            <form method="post" action="{{ url_for('invoices.public_confirm_payment', token=invoice.share_token) }}" style="display:inline" onsubmit="return confirm('Confirm that you have completed payment for this invoice?')">
+                <button type="submit" class="btn btn-pay" style="background:linear-gradient(135deg, #2ed89a, #00b875);color:#052014">✓ Confirm Payment</button>
+            </form>
             {% endif %}
             <button onclick="window.print()" class="btn btn-print">🖨 Print / Save PDF</button>
         </div>
     </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="max-width:900px;margin:20px auto 0;padding:0 16px">
+          {% for category, msg in messages %}
+            <div style="padding:14px 20px;border-radius:10px;font-weight:600;font-size:14px;background:{% if category == 'success' %}rgba(46,216,154,0.15){% else %}rgba(255,107,133,0.15){% endif %};border:1px solid {% if category == 'success' %}rgba(46,216,154,0.4){% else %}rgba(255,107,133,0.4){% endif %};color:{% if category == 'success' %}#2ed89a{% else %}#ff6b85{% endif %}">
+              {{ msg }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 
     {% if invoice.upi_qr_code_url and invoice.status not in ['Paid', 'Cancelled'] %}
     <!-- UPI QR Modal -->

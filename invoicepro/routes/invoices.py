@@ -249,16 +249,42 @@ def index():
     )
 
 
-# ─── Public Unauthenticated Invoice View ─────────────────────────────────────
+# ─── Public Unauthenticated Invoice View & Payment Confirmation ──────────────
 
 @invoices_bp.get("/public/<token>")
 def public_view(token):
-    import uuid
-    invoice = Invoice.query.filter_by(share_token=token).first_or_404()
+    from sqlalchemy.orm import joinedload
+    invoice = Invoice.query.options(
+        joinedload(Invoice.customer),
+        joinedload(Invoice.user).joinedload(User.company_settings),
+        joinedload(Invoice.items)
+    ).filter_by(share_token=token).first_or_404()
     invoice.refresh_payment_state()
     db.session.commit()
     tmpl = invoice.template if invoice.template in {"classic", "modern", "minimal"} else "classic"
     return render_template("invoices/public_view.html", invoice=invoice, template_name=tmpl)
+
+
+@invoices_bp.post("/public/<token>/confirm-payment")
+def public_confirm_payment(token):
+    invoice = Invoice.query.filter_by(share_token=token).first_or_404()
+    if invoice.status != "Paid":
+        amount_due = invoice.balance_due if invoice.balance_due > 0 else invoice.total_amount
+        payment = Payment(
+            invoice_id=invoice.id,
+            user_id=invoice.user_id,
+            payment_date=date.today(),
+            amount=amount_due,
+            payment_method=request.form.get("method", "Online Payment").strip(),
+            reference_number=request.form.get("reference", f"ONLINE-{token[:8].upper()}").strip(),
+            notes="Client confirmed online payment"
+        )
+        db.session.add(payment)
+        invoice.amount_paid = Decimal(invoice.amount_paid or 0) + Decimal(amount_due)
+        invoice.status = "Paid"
+        db.session.commit()
+        flash("🎉 Payment confirmed! Thank you for your payment.", "success")
+    return redirect(url_for("invoices.public_view", token=token))
 
 
 # ─── Batch ZIP PDF Export ───────────────────────────────────────────────────
