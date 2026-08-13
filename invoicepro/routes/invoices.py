@@ -10,7 +10,7 @@ from flask_login import current_user, login_required
 from sqlalchemy import or_, select
 
 from invoicepro.database.database import db
-from invoicepro.database.models import Customer, Invoice, InvoiceItem, Payment, Product
+from invoicepro.database.models import Customer, Invoice, InvoiceItem, Payment, Product, User
 from invoicepro.forms import InvoiceCreateForm, InvoiceEditForm, PaymentForm, SendEmailForm
 from invoicepro.services.gst_calculator import calculate_invoice
 from invoicepro.services.pdf_generator import generate_pdf, pdf_filename
