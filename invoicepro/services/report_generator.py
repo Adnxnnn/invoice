@@ -71,28 +71,23 @@ def revenue_summary(user_id: int, period="month", date_from=None, date_to=None) 
 
 
 def monthly_revenue_chart(user_id: int, year: int | None = None) -> dict:
+    from sqlalchemy import extract
     year = year or date.today().year
-    results = (
-        db.session.query(
-            func.strftime("%m", Invoice.invoice_date).label("month"),
-            func.sum(Invoice.total_amount).label("revenue"),
-            func.sum(Invoice.amount_paid).label("paid"),
-        )
-        .filter(
-            Invoice.user_id == user_id,
-            func.strftime("%Y", Invoice.invoice_date) == str(year),
-        )
-        .group_by("month")
-        .all()
-    )
+    invoices = Invoice.query.filter(
+        Invoice.user_id == user_id,
+        extract("year", Invoice.invoice_date) == year,
+    ).all()
+
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     revenue = [0.0] * 12
     paid = [0.0] * 12
-    for row in results:
-        idx = int(row.month) - 1
-        revenue[idx] = float(row.revenue or 0)
-        paid[idx] = float(row.paid or 0)
+    for inv in invoices:
+        if inv.invoice_date:
+            idx = inv.invoice_date.month - 1
+            if 0 <= idx < 12:
+                revenue[idx] += float(inv.total_amount or 0)
+                paid[idx] += float(inv.amount_paid or 0)
     return {"labels": months, "revenue": revenue, "paid": paid}
 
 
