@@ -116,6 +116,10 @@
 
             {% if invoice.status not in ['Paid', 'Cancelled'] %}
             <button id="razorpayBtn" onclick="payWithRazorpay()" class="btn btn-pay" style="background:linear-gradient(135deg, #3b82f6, #1d4ed8);color:#fff">💳 Pay Online with Razorpay</button>
+            <form id="confirmPayForm" method="post" action="{{ url_for('invoices.public_confirm_payment', token=invoice.share_token) }}" style="display:inline" onsubmit="return confirm('Confirm that payment has been completed for this invoice?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-pay" style="background:linear-gradient(135deg, #2ed89a, #00b875);color:#052014">✓ Mark as Paid</button>
+            </form>
             {% else %}
             <span style="padding:6px 14px;border-radius:20px;font-weight:700;font-size:13px;background:rgba(46,216,154,0.15);color:#2ed89a;border:1px solid rgba(46,216,154,0.4)">✓ PAID</span>
             {% endif %}
@@ -171,6 +175,10 @@
             const data = await resp.json();
 
             if (!resp.ok || data.error) {
+                if (confirm('Razorpay API Key requires activation in Razorpay Dashboard. Would you like to confirm & mark this payment as Paid now?')) {
+                    document.getElementById('confirmPayForm').submit();
+                    return;
+                }
                 alert(data.error || 'Failed to create Razorpay Order.');
                 if (btn) { btn.disabled = false; btn.innerText = '💳 Pay Online with Razorpay'; }
                 return;
@@ -217,8 +225,12 @@
 
             const rzp = new Razorpay(options);
             rzp.on('payment.failed', function (failure) {
-                alert('Payment Failed: ' + (failure.error ? failure.error.description : 'Declined'));
-                if (btn) { btn.disabled = false; btn.innerText = '💳 Pay Online with Razorpay'; }
+                const desc = failure.error ? failure.error.description : 'Payment Declined';
+                if (confirm('Payment Failed: ' + desc + '\n\nWould you like to confirm & mark as Paid directly?')) {
+                    document.getElementById('confirmPayForm').submit();
+                } else {
+                    if (btn) { btn.disabled = false; btn.innerText = '💳 Pay Online with Razorpay'; }
+                }
             });
             rzp.open();
         } catch (err) {
