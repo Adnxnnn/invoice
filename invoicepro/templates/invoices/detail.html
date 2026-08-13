@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}{{ invoice.invoice_number }} | InvoicePro{% endblock %}
+{% block body %}
+<main class="page-wrap">
+    <!-- Header -->
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Invoice Detail</p>
+            <h1>{{ invoice.invoice_number }}</h1>
+            <p class="muted">{{ invoice.customer.name }} &nbsp;·&nbsp; {{ invoice.invoice_date.strftime("%d %b %Y") }}</p>
+        </div>
+        <div class="topbar-actions">
+            <a href="{{ url_for('invoices.edit', invoice_id=invoice.id) }}" class="btn btn-secondary">Edit</a>
+            <a href="{{ url_for('invoices.download_pdf', invoice_id=invoice.id) }}" class="btn btn-primary">⬇ PDF</a>
+            <a href="{{ url_for('invoices.download_docx', invoice_id=invoice.id) }}" class="btn btn-secondary">⬇ Word</a>
+            <a href="{{ url_for('invoices.print_view', invoice_id=invoice.id) }}" class="btn btn-secondary" target="_blank">🖨 Print</a>
+        </div>
+    </header>
+
+    <!-- Action Bar -->
+    <div class="panel" style="margin-bottom:18px;padding:16px">
+        <div class="inline-actions">
+            <!-- Status updater -->
+            {% if invoice.status != 'Paid' %}
+            <form method="post" action="{{ url_for('invoices.update_status', invoice_id=invoice.id, status='Paid') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-success btn-sm">✓ Mark Complete / Paid</button>
+            </form>
+            {% endif %}
+            <form method="post" action="" id="statusSelectForm" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select onchange="if(this.value){ this.form.action='{{ url_for('invoices.index') }}' + '{{ invoice.id }}/status/' + this.value; this.form.submit(); }" style="padding:6px 12px;border-radius:8px;background:rgba(255,255,255,0.08);color:var(--fg-main);border:1px solid rgba(255,255,255,0.15);font-size:13px;cursor:pointer">
+                    <option value="" disabled selected>Change Status: {{ invoice.status }} ▼</option>
+                    <option value="Draft">Mark Draft</option>
+                    <option value="Sent">Mark Sent</option>
+                    <option value="Pending">Mark Pending</option>
+                    <option value="Paid">Mark Paid / Complete</option>
+                    <option value="Cancelled">Mark Cancelled</option>
+                </select>
+            </form>
+
+            <!-- Other actions -->
+            <form method="post" action="{{ url_for('invoices.duplicate', invoice_id=invoice.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-ghost btn-sm">Duplicate</button>
+            </form>
+
+            <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('{{ url_for('invoices.public_view', token=invoice.share_token, _external=True) }}'); alert('Client Link copied to clipboard!')">🔗 Copy Link</button>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('emailModal').classList.add('open')">✉ Email</button>
+            <a href="{{ url_for('invoices.whatsapp_share', invoice_id=invoice.id) }}" class="btn btn-ghost btn-sm" target="_blank">💬 WhatsApp</a>
+
+            <form method="post" action="{{ url_for('invoices.delete', invoice_id=invoice.id) }}" onsubmit="return confirm('Delete this invoice permanently?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel-grid">
+        <!-- Left: Invoice Info -->
+        <div style="display:grid;gap:18px">
+            <!-- Invoice meta -->
+            <article class="panel">
+                <h3 style="margin-bottom:14px">Invoice Details</h3>
+                <dl class="detail-list">
+                    <div><dt>Invoice #</dt><dd>{{ invoice.invoice_number }}</dd></div>
+                    <div><dt>Status</dt><dd><span class="badge badge-{{ invoice.status }}">{{ invoice.status }}</span></dd></div>
+                    <div><dt>Invoice Date</dt><dd>{{ invoice.invoice_date.strftime("%d %b %Y") }}</dd></div>
+                    <div><dt>Due Date</dt><dd>{{ invoice.due_date.strftime("%d %b %Y") }}</dd></div>
+                    {% if invoice.payment_terms %}<div><dt>Payment Terms</dt><dd>{{ invoice.payment_terms }}</dd></div>{% endif %}
+                    <div><dt>Currency</dt><dd>{{ invoice.currency }}</dd></div>
+                    <div><dt>Transaction Type</dt><dd>{{ "Intra-state (CGST + SGST)" if invoice.transaction_type == 'intra' else "Inter-state (IGST)" }}</dd></div>
+                    <div><dt>Template</dt><dd>{{ invoice.template.title() }}</dd></div>
+                    {% if invoice.email_sent_at %}<div><dt>Email Sent</dt><dd>{{ invoice.email_sent_at.strftime("%d %b %Y %H:%M") }}</dd></div>{% endif %}
+                </dl>
+            </article>
+
+            <!-- Customer info -->
+            <article class="panel">
+                <h3 style="margin-bottom:14px">Customer</h3>
+                <dl class="detail-list">
+                    <div><dt>Name</dt><dd><a href="{{ url_for('customers.detail', customer_id=invoice.customer.id) }}">{{ invoice.customer.name }}</a></dd></div>
+                    {% if invoice.customer.email %}<div><dt>Email</dt><dd>{{ invoice.customer.email }}</dd></div>{% endif %}
+                    {% if invoice.customer.phone %}<div><dt>Phone</dt><dd>{{ invoice.customer.phone }}</dd></div>{% endif %}
+                    {% if invoice.customer.address %}<div><dt>Billing Address</dt><dd>{{ invoice.customer.address }}</dd></div>{% endif %}
+                    {% if invoice.customer.gstin %}<div><dt>GSTIN</dt><dd>{{ invoice.customer.gstin }}</dd></div>{% endif %}
+                </dl>
+            </article>
+
+            {% if invoice.notes %}
+            <article class="panel">
+                <h3 style="margin-bottom:10px">Notes</h3>
+                <p class="muted">{{ invoice.notes }}</p>
+            </article>
+            {% endif %}
+        </div>
+
+        <!-- Right: Totals + Payments -->
+        <div style="display:grid;gap:18px;align-content:start">
+            <!-- Totals -->
+            <article class="panel">
+                <h3 style="margin-bottom:14px">Summary</h3>
+                <div class="totals-panel" style="border:none;padding:0">
+                    <div class="totals-row"><span>Subtotal</span><strong>{{ invoice.currency }} {{ "%.2f"|format(invoice.subtotal) }}</strong></div>
+                    <div class="totals-row"><span>Discount</span><strong>- {{ invoice.currency }} {{ "%.2f"|format(invoice.discount_total) }}</strong></div>
+                    <div class="totals-row"><span>Taxable Amount</span><strong>{{ invoice.currency }} {{ "%.2f"|format(invoice.taxable_amount) }}</strong></div>
+                    {% if invoice.cgst_amount > 0 %}
+                    <div class="totals-row"><span>CGST</span><strong>{{ "%.2f"|format(invoice.cgst_amount) }}</strong></div>
+                    <div class="totals-row"><span>SGST</span><strong>{{ "%.2f"|format(invoice.sgst_amount) }}</strong></div>
+                    {% endif %}
+                    {% if invoice.igst_amount > 0 %}
+                    <div class="totals-row"><span>IGST</span><strong>{{ "%.2f"|format(invoice.igst_amount) }}</strong></div>
+                    {% endif %}
+                    <div class="totals-row totals-grand"><span>Grand Total</span><strong>{{ invoice.currency }} {{ "%.2f"|format(invoice.total_amount) }}</strong></div>
+                    <div class="totals-row"><span>Amount Paid</span><strong style="color:var(--success)">{{ invoice.currency }} {{ "%.2f"|format(invoice.amount_paid) }}</strong></div>
+                    <div class="totals-row"><span>Balance Due</span><strong style="color:var(--danger)">{{ invoice.currency }} {{ "%.2f"|format(invoice.balance_due) }}</strong></div>
+                </div>
+            </article>
+
+            <!-- Payment form -->
+            {% if invoice.status not in ['Paid', 'Cancelled'] %}
+            <article class="panel">
+                <h3 style="margin-bottom:14px">Record Payment</h3>
+                <form method="post" action="{{ url_for('invoices.add_payment', invoice_id=invoice.id) }}">
+                    {{ payment_form.hidden_tag() }}
+                    <div class="form-grid" style="margin-top:0">
+                        <label>
+                            <span>{{ payment_form.payment_date.label.text }}</span>
+                            {{ payment_form.payment_date() }}
+                            {% for e in payment_form.payment_date.errors %}<span class="error">{{ e }}</span>{% endfor %}
+                        </label>
+                        <label>
+                            <span>{{ payment_form.amount.label.text }}</span>
+                            {{ payment_form.amount(step="0.01") }}
+                            {% for e in payment_form.amount.errors %}<span class="error">{{ e }}</span>{% endfor %}
+                        </label>
+                        <label>
+                            <span>{{ payment_form.payment_method.label.text }}</span>
+                            {{ payment_form.payment_method(placeholder="Bank transfer, UPI, Cash...") }}
+                        </label>
+                        <label>
+                            <span>{{ payment_form.reference_number.label.text }}</span>
+                            {{ payment_form.reference_number(placeholder="UTR / Transaction ID") }}
+                        </label>
+                    </div>
+                    <div class="form-actions"><button type="submit" class="btn btn-success btn-sm">Record Payment</button></div>
+                </form>
+            </article>
+            {% endif %}
+
+            <!-- Payment history -->
+            {% if invoice.payments %}
+            <article class="panel">
+                <h3 style="margin-bottom:14px">Payment History</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Date</th><th>Method</th><th>Ref</th><th>Amount</th></tr></thead>
+                        <tbody>
+                            {% for p in invoice.payments %}
+                            <tr>
+                                <td>{{ p.payment_date.strftime("%d %b %Y") }}</td>
+                                <td>{{ p.payment_method or "—" }}</td>
+                                <td>{{ p.reference_number or "—" }}</td>
+                                <td><strong>{{ invoice.currency }} {{ "%.2f"|format(p.amount) }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Items Table -->
+    <article class="panel" style="margin-top:18px">
+        <h3 style="margin-bottom:14px">Line Items</h3>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Description</th>
+                        <th>HSN/SAC</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
+                        <th>Discount</th>
+                        <th>GST %</th>
+                        <th>Tax</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice.items %}
+                    <tr>
+                        <td><strong>{{ item.item_name }}</strong></td>
+                        <td>{{ item.description or "—" }}</td>
+                        <td>{{ item.hsn_sac or "—" }}</td>
+                        <td>{{ "%.2f"|format(item.quantity) }}</td>
+                        <td>{{ "%.2f"|format(item.unit_price) }}</td>
+                        <td>{{ "%.2f"|format(item.discount) }}</td>
+                        <td>{{ "%.1f"|format(item.gst_rate) }}%</td>
+                        <td>{{ "%.2f"|format(item.tax_amount) }}</td>
+                        <td><strong>{{ invoice.currency }} {{ "%.2f"|format(item.line_total) }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <!-- View Document -->
+    <div style="margin-top:18px;text-align:center">
+        <a href="{{ url_for('invoices.print_view', invoice_id=invoice.id) }}" class="btn btn-secondary" target="_blank">
+            📄 Document View (Print/Save as PDF)
+        </a>
+    </div>
+</main>
+
+<!-- Email Modal -->
+<div class="modal-backdrop" id="emailModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Send Invoice by Email</h2>
+            <button class="modal-close" onclick="document.getElementById('emailModal').classList.remove('open')">×</button>
+        </div>
+        <form method="post" action="{{ url_for('invoices.send_email', invoice_id=invoice.id) }}">
+            {{ email_form.hidden_tag() }}
+            <div class="form-grid" style="margin-top:0">
+                <label>
+                    <span>{{ email_form.recipient_email.label.text }}</span>
+                    {{ email_form.recipient_email() }}
+                    {% for e in email_form.recipient_email.errors %}<span class="error">{{ e }}</span>{% endfor %}
+                </label>
+                <label>
+                    <span>{{ email_form.subject.label.text }}</span>
+                    {{ email_form.subject() }}
+                </label>
+                <label class="full-width">
+                    <span>{{ email_form.body.label.text }}</span>
+                    {{ email_form.body(rows="6") }}
+                </label>
+            </div>
+            <div class="form-actions" style="margin-top:12px">
+                <button type="submit" class="btn btn-primary">Send Email</button>
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('emailModal').classList.remove('open')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

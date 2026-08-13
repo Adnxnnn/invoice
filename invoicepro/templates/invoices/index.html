@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block title %}Invoices | InvoicePro{% endblock %}
+{% block body %}
+<main class="page-wrap">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Invoices</p>
+            <h1>Invoice Workspace</h1>
+            <p class="muted">Create, manage, and track all your invoices.</p>
+        </div>
+        <div class="topbar-actions">
+            <a href="{{ url_for('invoices.export_zip') }}" class="btn btn-secondary">📦 Export ZIP</a>
+            <a href="{{ url_for('invoices.index') }}#create" class="btn btn-primary">+ New Invoice</a>
+        </div>
+    </header>
+
+    <!-- Filter Bar -->
+    <form method="get" action="{{ url_for('invoices.index') }}" class="panel" style="margin-bottom:18px;padding:18px">
+        <div class="filter-bar" style="margin-bottom:0">
+            <input type="search" name="q" value="{{ query_text }}" placeholder="🔍 Search invoice # or customer">
+            <select name="status">
+                <option value="">All statuses</option>
+                {% for s in status_choices %}
+                <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+            <select name="date_filter">
+                <option value="">All dates</option>
+                {% for df in date_filter_choices %}
+                <option value="{{ df }}" {% if date_filter == df %}selected{% endif %}>{{ df.title() }}</option>
+                {% endfor %}
+            </select>
+            {% if date_filter == 'custom' %}
+            <input type="date" name="date_from" value="{{ date_from }}">
+            <input type="date" name="date_to"   value="{{ date_to }}">
+            {% endif %}
+            <button type="submit" class="btn btn-secondary">Filter</button>
+            {% if query_text or status_filter or date_filter %}
+            <a href="{{ url_for('invoices.index') }}" class="btn btn-ghost">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+
+    <div class="workspace-grid">
+        <!-- CREATE FORM -->
+        <article class="panel" id="create">
+            <h2 style="margin-bottom:4px">Create Invoice</h2>
+            <p class="muted" style="margin-bottom:16px;font-size:13px">Add items, set GST type, pick a template.</p>
+
+            {% if has_dependencies %}
+            <form method="post" id="invoice-form" action="{{ url_for('invoices.index') }}">
+                {{ form.hidden_tag() }}
+                <input type="hidden" id="items_json" name="items_json" value="">
+                <input type="hidden" id="existing-items-json" value="">
+
+                {% if form.errors %}
+                <div class="form-alert" style="margin-bottom:12px">
+                    <strong>Please fix the errors below.</strong>
+                    {% for field, errs in form.errors.items() %}{% for e in errs %}<p>{{ e }}</p>{% endfor %}{% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="form-grid two-col" style="margin-top:0">
+                    <label>
+                        <span>{{ form.customer_id.label.text }}</span>
+                        {{ form.customer_id() }}
+                        {% for e in form.customer_id.errors %}<span class="error">{{ e }}</span>{% endfor %}
+                    </label>
+                    <label>
+                        <span>{{ form.transaction_type.label.text }}</span>
+                        {{ form.transaction_type(id="transaction_type") }}
+                    </label>
+                    <label>
+                        <span>{{ form.invoice_date.label.text }}</span>
+                        {{ form.invoice_date() }}
+                        {% for e in form.invoice_date.errors %}<span class="error">{{ e }}</span>{% endfor %}
+                    </label>
+                    <label>
+                        <span>{{ form.due_date.label.text }}</span>
+                        {{ form.due_date() }}
+                        {% for e in form.due_date.errors %}<span class="error">{{ e }}</span>{% endfor %}
+                    </label>
+                    <label>
+                        <span>{{ form.status.label.text }}</span>
+                        {{ form.status() }}
+                    </label>
+                    <label>
+                        <span>{{ form.currency.label.text }}</span>
+                        {{ form.currency() }}
+                    </label>
+                    <label>
+                        <span>{{ form.template.label.text }}</span>
+                        {{ form.template() }}
+                    </label>
+                    <label>
+                        <span>{{ form.payment_terms.label.text }}</span>
+                        {{ form.payment_terms(placeholder="Due on receipt") }}
+                    </label>
+                    <label class="full-width">
+                        <span>{{ form.payment_link.label.text }}</span>
+                        {{ form.payment_link(placeholder="https://razorpay.me/@yourbusiness or UPI ID...") }}
+                    </label>
+                    <label class="full-width">
+                        <span>{{ form.notes.label.text }}</span>
+                        {{ form.notes(rows="2", placeholder="Any notes for this invoice...") }}
+                    </label>
+                </div>
+
+                <!-- Items -->
+                <div style="margin-top:20px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                        <h3 style="font-size:14px">Line Items</h3>
+                        <button type="button" id="add-item-btn" class="btn btn-secondary btn-sm">+ Add Row</button>
+                    </div>
+                    <div class="items-table-wrap">
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Item Name *</th>
+                                    <th>Description</th>
+                                    <th>HSN/SAC</th>
+                                    <th>Qty</th>
+                                    <th>Unit Price</th>
+                                    <th>Discount</th>
+                                    <th>GST %</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="items-tbody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Totals panel -->
+                    <div class="totals-panel" style="margin-top:14px">
+                        <div class="totals-row"><span>Subtotal</span><strong id="tot-subtotal">0.00</strong></div>
+                        <div class="totals-row"><span>Discount</span><strong id="tot-discount">0.00</strong></div>
+                        <div class="totals-row"><span>Taxable Amount</span><strong id="tot-taxable">0.00</strong></div>
+                        <div class="totals-row gst-row-intra"><span>CGST</span><strong id="tot-cgst">0.00</strong></div>
+                        <div class="totals-row gst-row-intra"><span>SGST</span><strong id="tot-sgst">0.00</strong></div>
+                        <div class="totals-row gst-row-inter" style="display:none"><span>IGST</span><strong id="tot-igst">0.00</strong></div>
+                        <div class="totals-row totals-grand"><span>Grand Total</span><strong id="tot-total">0.00</strong></div>
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-top:20px">
+                    {{ form.submit(class_="btn btn-primary") }}
+                </div>
+            </form>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">⚠️</div>
+                <h3>Customers and products required</h3>
+                <p class="muted">Add at least one customer and one product before creating an invoice.</p>
+                <div class="inline-actions" style="margin-top:12px">
+                    <a href="{{ url_for('customers.index') }}" class="btn btn-secondary btn-sm">Add customer</a>
+                    <a href="{{ url_for('products.index') }}" class="btn btn-secondary btn-sm">Add product</a>
+                </div>
+            </div>
+            {% endif %}
+        </article>
+
+        <!-- INVOICE LIST -->
+        <article class="panel">
+            <div class="section-heading">
+                <div>
+                    <h2>Saved Invoices</h2>
+                    <p class="muted" style="font-size:12px">{{ invoices|length }} invoice{{ 's' if invoices|length != 1 }} found</p>
+                </div>
+            </div>
+            {% if invoices %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th>Balance</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in invoices %}
+                        <tr>
+                            <td><a href="{{ url_for('invoices.detail', invoice_id=inv.id) }}"><strong>{{ inv.invoice_number }}</strong></a></td>
+                            <td>{{ inv.customer.name }}</td>
+                            <td style="white-space:nowrap">{{ inv.invoice_date.strftime("%d %b %Y") }}</td>
+                            <td><span class="badge badge-{{ inv.status }}">{{ inv.status }}</span></td>
+                            <td>{{ inv.currency }} {{ "%.2f"|format(inv.total_amount) }}</td>
+                            <td>{{ inv.currency }} {{ "%.2f"|format(inv.balance_due) }}</td>
+                            <td>
+                                <div class="table-actions" style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+                                    <a href="{{ url_for('invoices.detail', invoice_id=inv.id) }}" class="btn btn-ghost btn-xs" title="View details">View</a>
+                                    <a href="{{ url_for('invoices.edit', invoice_id=inv.id) }}" class="btn btn-secondary btn-xs" title="Edit invoice">Edit</a>
+                                    <a href="{{ url_for('invoices.download_pdf', invoice_id=inv.id) }}" class="btn btn-ghost btn-xs">PDF</a>
+                                    <a href="{{ url_for('invoices.download_docx', invoice_id=inv.id) }}" class="btn btn-ghost btn-xs">Word</a>
+                                    <form method="post" action="{{ url_for('invoices.update_status', invoice_id=inv.id, status='Paid') }}" style="display:inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        {% if inv.status != 'Paid' %}
+                                        <button type="submit" class="btn btn-success btn-xs" title="Mark as Paid/Complete">✓ Paid</button>
+                                        {% endif %}
+                                    </form>
+                                    <form method="post" action="{{ url_for('invoices.delete', invoice_id=inv.id) }}" style="display:inline" onsubmit="return confirm('Delete invoice {{ inv.invoice_number }} permanently?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-danger btn-xs" title="Delete invoice">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📄</div>
+                <h3>No invoices found</h3>
+                <p class="muted">{% if query_text or status_filter %}Try adjusting your filters.{% else %}Create your first invoice using the form.{% endif %}</p>
+            </div>
+            {% endif %}
+        </article>
+    </div>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/invoice_form.js') }}"></script>{% endblock %}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}InvoicePro{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}InvoicePro – Professional invoice management for freelancers and businesses.{% endblock %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="ambient ambient-three"></div>
+    <div class="shell">
+        {% include "partials/flash_messages.html" %}
+        {% if current_user.is_authenticated %}
+        <nav class="app-nav">
+            <div class="app-nav-inner">
+                <a href="{{ url_for('dashboard.home') }}" class="brand">
+                    <span class="brand-icon">⚡</span> InvoicePro
+                </a>
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="nav-links" id="navLinks">
+                    <a href="{{ url_for('dashboard.home') }}" class="{% if request.blueprint == 'dashboard' %}active{% endif %}">Dashboard</a>
+                    <a href="{{ url_for('customers.index') }}" class="{% if request.blueprint == 'customers' %}active{% endif %}">Customers</a>
+                    <a href="{{ url_for('products.index') }}" class="{% if request.blueprint == 'products' %}active{% endif %}">Products</a>
+                    <a href="{{ url_for('invoices.index') }}" class="{% if request.blueprint == 'invoices' %}active{% endif %}">Invoices</a>
+                    <a href="{{ url_for('reports.index') }}" class="{% if request.blueprint == 'reports' %}active{% endif %}">Reports</a>
+                    <a href="{{ url_for('settings.index') }}" class="{% if request.blueprint == 'settings' %}active{% endif %}">Settings</a>
+                </div>
+                <div class="nav-user">
+                    <span class="nav-user-name">{{ current_user.name }}</span>
+                    <form method="post" action="{{ url_for('auth.logout') }}" style="margin:0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">Log out</button>
+                    </form>
+                </div>
+            </div>
+        </nav>
+        {% endif %}
+        {% block body %}{% endblock %}
+    </div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

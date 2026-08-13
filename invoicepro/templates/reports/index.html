@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Reports | InvoicePro{% endblock %}
+{% block body %}
+<main class="page-wrap">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Reports</p>
+            <h1>Business Reports</h1>
+            <p class="muted">Analyse your revenue, GST, customers, and products.</p>
+        </div>
+        <div class="topbar-actions">
+            <a href="{{ url_for('reports.export', format='csv', period=period, date_from=date_from_str, date_to=date_to_str) }}" class="btn btn-secondary">⬇ CSV</a>
+            <a href="{{ url_for('reports.export', format='excel', period=period, date_from=date_from_str, date_to=date_to_str) }}" class="btn btn-secondary">⬇ Excel</a>
+        </div>
+    </header>
+
+    <!-- Report type tabs -->
+    <div class="report-tabs">
+        {% for rtype, rlabel in report_types %}
+        <a href="{{ url_for('reports.index', report=rtype, period=period) }}" class="report-tab {% if report_type == rtype %}active{% endif %}">{{ rlabel }}</a>
+        {% endfor %}
+    </div>
+
+    <!-- Period filter -->
+    <form method="get" action="{{ url_for('reports.index') }}" class="panel" style="margin-bottom:18px;padding:16px">
+        <input type="hidden" name="report" value="{{ report_type }}">
+        <div class="filter-bar" style="margin-bottom:0">
+            {% for pval, plabel in period_choices %}
+            <label style="flex-direction:row;gap:6px;align-items:center;width:auto">
+                <input type="radio" name="period" value="{{ pval }}" {% if period == pval %}checked{% endif %}> {{ plabel }}
+            </label>
+            {% endfor %}
+            <input type="date" name="date_from" value="{{ date_from_str }}" placeholder="From" {% if period != 'custom' %}style="display:none"{% endif %} id="rfrom">
+            <input type="date" name="date_to"   value="{{ date_to_str }}"   placeholder="To"   {% if period != 'custom' %}style="display:none"{% endif %} id="rto">
+            <button type="submit" class="btn btn-primary btn-sm">Generate</button>
+        </div>
+    </form>
+
+    <!-- Revenue Report -->
+    {% if report_type == 'revenue' and data %}
+    <div class="stats-grid" style="margin-bottom:20px">
+        <article class="stat-card stat-revenue"><div class="stat-label">Total Revenue</div><div class="stat-value">{{ "%.0f"|format(data.total_revenue) }}</div></article>
+        <article class="stat-card stat-paid"><div class="stat-label">Collected</div><div class="stat-value">{{ "%.0f"|format(data.total_paid) }}</div></article>
+        <article class="stat-card stat-pending"><div class="stat-label">Pending</div><div class="stat-value">{{ "%.0f"|format(data.total_pending) }}</div></article>
+        <article class="stat-card stat-overdue"><div class="stat-label">Overdue</div><div class="stat-value">{{ "%.0f"|format(data.total_overdue) }}</div></article>
+    </div>
+    <article class="panel">
+        <h2 style="margin-bottom:14px">Invoices ({{ data.invoice_count }})</h2>
+        {% if data.invoices %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Invoice #</th><th>Customer</th><th>Date</th><th>Status</th><th>Total</th><th>Paid</th><th>Balance</th></tr></thead>
+                <tbody>
+                    {% for inv in data.invoices %}
+                    <tr>
+                        <td><a href="{{ url_for('invoices.detail', invoice_id=inv.id) }}"><strong>{{ inv.invoice_number }}</strong></a></td>
+                        <td>{{ inv.customer.name }}</td>
+                        <td>{{ inv.invoice_date.strftime("%d %b %Y") }}</td>
+                        <td><span class="badge badge-{{ inv.status }}">{{ inv.status }}</span></td>
+                        <td>{{ inv.currency }} {{ "%.2f"|format(inv.total_amount) }}</td>
+                        <td>{{ "%.2f"|format(inv.amount_paid) }}</td>
+                        <td>{{ "%.2f"|format(inv.balance_due) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><p class="muted">No invoices for this period.</p></div>
+        {% endif %}
+    </article>
+    {% endif %}
+
+    <!-- GST Report -->
+    {% if report_type == 'gst' and data %}
+    <div class="stats-grid" style="margin-bottom:20px">
+        <article class="stat-card"><div class="stat-label">Taxable Amount</div><div class="stat-value">{{ "%.0f"|format(data.taxable_amount) }}</div></article>
+        <article class="stat-card stat-revenue"><div class="stat-label">Total Tax</div><div class="stat-value">{{ "%.0f"|format(data.total_tax) }}</div></article>
+        <article class="stat-card"><div class="stat-label">CGST</div><div class="stat-value">{{ "%.0f"|format(data.cgst) }}</div></article>
+        <article class="stat-card"><div class="stat-label">SGST</div><div class="stat-value">{{ "%.0f"|format(data.sgst) }}</div></article>
+    </div>
+    {% if data.igst > 0 %}
+    <article class="panel" style="margin-bottom:18px">
+        <div class="stat-label">IGST (Inter-state)</div>
+        <div class="stat-value" style="font-size:1.4rem">{{ "%.2f"|format(data.igst) }}</div>
+    </article>
+    {% endif %}
+    {% endif %}
+
+    <!-- Customer Report -->
+    {% if report_type == 'customers' and data.rows %}
+    <article class="panel">
+        <h2 style="margin-bottom:14px">Customer Analysis</h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Customer</th><th>Email</th><th>Invoices</th><th>Total Billed</th><th>Total Paid</th><th>Outstanding</th></tr></thead>
+                <tbody>
+                    {% for r in data.rows %}
+                    <tr>
+                        <td><strong>{{ r.name }}</strong></td>
+                        <td>{{ r.email or "—" }}</td>
+                        <td>{{ r.invoices }}</td>
+                        <td>{{ "%.2f"|format(r.total_billed) }}</td>
+                        <td>{{ "%.2f"|format(r.total_paid) }}</td>
+                        <td {% if r.outstanding > 0 %}style="color:var(--warning);font-weight:700"{% endif %}>{{ "%.2f"|format(r.outstanding) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+    {% endif %}
+
+    <!-- Product Report -->
+    {% if report_type == 'products' and data.rows %}
+    <article class="panel">
+        <h2 style="margin-bottom:14px">Product Sales</h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Product</th><th>Total Qty Sold</th><th>Total Revenue</th></tr></thead>
+                <tbody>
+                    {% for r in data.rows %}
+                    <tr>
+                        <td><strong>{{ r.name }}</strong></td>
+                        <td>{{ "%.2f"|format(r.quantity) }}</td>
+                        <td>{{ "%.2f"|format(r.revenue) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+    {% endif %}
+
+    {% if not data %}
+    <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <h3>No data available</h3>
+        <p class="muted">Select a period and generate a report.</p>
+    </div>
+    {% endif %}
+</main>
+{% endblock %}
+{% block scripts %}
+<script>
+// Show/hide custom date inputs when period = custom
+document.querySelectorAll('[name="period"]').forEach(r => {
+    r.addEventListener('change', () => {
+        const custom = r.value === 'custom';
+        document.getElementById('rfrom').style.display = custom ? '' : 'none';
+        document.getElementById('rto').style.display   = custom ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

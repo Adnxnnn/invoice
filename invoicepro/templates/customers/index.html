@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Customers | InvoicePro{% endblock %}
+{% block body %}
+<main class="page-wrap">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Customers</p>
+            <h1>Customer Management</h1>
+            <p class="muted">Add, search, and manage your customer list.</p>
+        </div>
+    </header>
+
+    <div class="workspace-grid">
+        <!-- Add Customer Form -->
+        <article class="panel">
+            <h2 style="margin-bottom:4px">Add Customer</h2>
+            <form method="post">
+                {{ form.hidden_tag() }}
+                {% if form.errors %}
+                <div class="form-alert" style="margin:12px 0">
+                    {% for field, errs in form.errors.items() %}{% for e in errs %}<p>{{ e }}</p>{% endfor %}{% endfor %}
+                </div>
+                {% endif %}
+                <div class="form-grid two-col" style="margin-top:12px">
+                    <label class="full-width">
+                        <span>{{ form.name.label.text }}</span>
+                        {{ form.name(placeholder="Customer / company name") }}
+                        {% for e in form.name.errors %}<span class="error">{{ e }}</span>{% endfor %}
+                    </label>
+                    <label>
+                        <span>{{ form.email.label.text }}</span>
+                        {{ form.email(placeholder="email@example.com") }}
+                        {% for e in form.email.errors %}<span class="error">{{ e }}</span>{% endfor %}
+                    </label>
+                    <label>
+                        <span>{{ form.phone.label.text }}</span>
+                        {{ form.phone(placeholder="+91 ...") }}
+                    </label>
+                    <label>
+                        <span>{{ form.gstin.label.text }}</span>
+                        {{ form.gstin(placeholder="22AAAAA0000A1Z5") }}
+                    </label>
+                    <label class="full-width">
+                        <span>{{ form.address.label.text }}</span>
+                        {{ form.address(rows="2", placeholder="Billing address") }}
+                    </label>
+                    <label class="full-width">
+                        <span>{{ form.shipping_address.label.text }}</span>
+                        {{ form.shipping_address(rows="2", placeholder="Shipping address (if different)") }}
+                    </label>
+                    <label class="full-width">
+                        <span>{{ form.notes.label.text }}</span>
+                        {{ form.notes(rows="2", placeholder="Internal notes") }}
+                    </label>
+                </div>
+                <div class="form-actions"><button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button></div>
+            </form>
+        </article>
+
+        <!-- Customer List -->
+        <article class="panel">
+            <div class="section-heading">
+                <h2>All Customers</h2>
+                <form method="get" style="display:flex;gap:8px">
+                    <input type="search" name="q" value="{{ search }}" placeholder="Search..." style="width:200px">
+                    <button class="btn btn-secondary btn-sm">Search</button>
+                    {% if search %}<a href="{{ url_for('customers.index') }}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+                </form>
+            </div>
+            {% if customers %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>GSTIN</th>
+                            <th>Invoices</th>
+                            <th>Outstanding</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in customers %}
+                        <tr>
+                            <td><a href="{{ url_for('customers.detail', customer_id=c.id) }}"><strong>{{ c.name }}</strong></a></td>
+                            <td>{{ c.email or "—" }}</td>
+                            <td>{{ c.gstin or "—" }}</td>
+                            <td>{{ c.invoices|length }}</td>
+                            <td>{{ "%.2f"|format(c.total_outstanding) }}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <a href="{{ url_for('customers.detail', customer_id=c.id) }}" class="btn btn-ghost btn-xs">View</a>
+                                    <a href="{{ url_for('customers.edit', customer_id=c.id) }}" class="btn btn-ghost btn-xs">Edit</a>
+                                    <form method="post" action="{{ url_for('customers.delete', customer_id=c.id) }}" onsubmit="return confirm('Delete {{ c.name }}?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn-link btn-xs">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">👥</div>
+                <h3>{{ "No results for \"" + search + "\"" if search else "No customers yet" }}</h3>
+                <p class="muted">Add your first customer using the form.</p>
+            </div>
+            {% endif %}
+        </article>
+    </div>
+</main>
+{% endblock %}

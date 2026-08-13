@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} | InvoicePro{% endblock %}
+{% block body %}
+<main class="page-wrap">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Customer</p>
+            <h1>{{ customer.name }}</h1>
+        </div>
+        <div class="topbar-actions">
+            <a href="{{ url_for('customers.edit', customer_id=customer.id) }}" class="btn btn-secondary">Edit</a>
+            <a href="{{ url_for('customers.index') }}" class="btn btn-ghost">← Back</a>
+        </div>
+    </header>
+
+    <div class="panel-grid">
+        <!-- Profile -->
+        <article class="panel">
+            <h2 style="margin-bottom:14px">Profile</h2>
+            <dl class="detail-list">
+                <div><dt>Name</dt><dd>{{ customer.name }}</dd></div>
+                {% if customer.email %}<div><dt>Email</dt><dd>{{ customer.email }}</dd></div>{% endif %}
+                {% if customer.phone %}<div><dt>Phone</dt><dd>{{ customer.phone }}</dd></div>{% endif %}
+                {% if customer.gstin %}<div><dt>GSTIN</dt><dd>{{ customer.gstin }}</dd></div>{% endif %}
+                {% if customer.address %}<div><dt>Billing Address</dt><dd>{{ customer.address }}</dd></div>{% endif %}
+                {% if customer.shipping_address %}<div><dt>Shipping Address</dt><dd>{{ customer.shipping_address }}</dd></div>{% endif %}
+                {% if customer.notes %}<div><dt>Notes</dt><dd>{{ customer.notes }}</dd></div>{% endif %}
+            </dl>
+        </article>
+
+        <!-- Summary -->
+        <article class="panel">
+            <h2 style="margin-bottom:14px">Financial Summary</h2>
+            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);margin-bottom:0">
+                <div class="stat-card stat-revenue">
+                    <div class="stat-label">Total Billed</div>
+                    <div class="stat-value" style="font-size:1.4rem">{{ "%.2f"|format(customer.total_billed) }}</div>
+                </div>
+                <div class="stat-card stat-paid">
+                    <div class="stat-label">Total Paid</div>
+                    <div class="stat-value" style="font-size:1.4rem">{{ "%.2f"|format(customer.total_paid) }}</div>
+                </div>
+                <div class="stat-card stat-overdue" style="grid-column:1/-1">
+                    <div class="stat-label">Outstanding Balance</div>
+                    <div class="stat-value" style="font-size:1.4rem">{{ "%.2f"|format(customer.total_outstanding) }}</div>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <!-- Invoice History -->
+    <article class="panel" style="margin-top:18px">
+        <div class="section-heading">
+            <h2>Invoice History</h2>
+            <a href="{{ url_for('invoices.index') }}?q={{ customer.name }}" class="btn btn-ghost btn-sm">Filter in invoices →</a>
+        </div>
+        {% if customer.invoices %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Invoice #</th><th>Date</th><th>Due</th><th>Status</th><th>Total</th><th>Balance</th><th>Actions</th></tr></thead>
+                <tbody>
+                    {% for inv in customer.invoices | sort(attribute='invoice_date', reverse=True) %}
+                    <tr>
+                        <td><a href="{{ url_for('invoices.detail', invoice_id=inv.id) }}"><strong>{{ inv.invoice_number }}</strong></a></td>
+                        <td>{{ inv.invoice_date.strftime("%d %b %Y") }}</td>
+                        <td>{{ inv.due_date.strftime("%d %b %Y") }}</td>
+                        <td><span class="badge badge-{{ inv.status }}">{{ inv.status }}</span></td>
+                        <td>{{ inv.currency }} {{ "%.2f"|format(inv.total_amount) }}</td>
+                        <td>{{ inv.currency }} {{ "%.2f"|format(inv.balance_due) }}</td>
+                        <td>
+                            <div class="table-actions">
+                                <a href="{{ url_for('invoices.detail', invoice_id=inv.id) }}" class="btn btn-ghost btn-xs">View</a>
+                                <a href="{{ url_for('invoices.download_pdf', invoice_id=inv.id) }}" class="btn btn-ghost btn-xs">PDF</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state"><p class="muted">No invoices for this customer yet.</p></div>
+        {% endif %}
+    </article>
+</main>
+{% endblock %}

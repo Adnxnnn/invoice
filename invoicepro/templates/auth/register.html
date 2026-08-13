@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Register | InvoicePro{% endblock %}
+{% block body %}
+<main class="auth-layout">
+    <section class="auth-card auth-card-wide">
+        <div>
+            <p class="eyebrow">Phase 1</p>
+            <h1>Create your workspace</h1>
+            <p class="muted">We are setting up the owner account and the base company profile.</p>
+        </div>
+        <form method="post" class="form-grid two-column">
+            {{ form.hidden_tag() }}
+            <label>
+                <span>{{ form.name.label.text }}</span>
+                {{ form.name(placeholder="Adnan Khan") }}
+                {% for error in form.name.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            </label>
+            <label>
+                <span>{{ form.email.label.text }}</span>
+                {{ form.email(placeholder="you@company.com") }}
+                {% for error in form.email.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            </label>
+            <label>
+                <span>{{ form.phone.label.text }}</span>
+                {{ form.phone(placeholder="+91 98765 43210") }}
+                {% for error in form.phone.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            </label>
+            <label>
+                <span>{{ form.company_name.label.text }}</span>
+                {{ form.company_name(placeholder="Acme Private Limited") }}
+                {% for error in form.company_name.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            </label>
+            <label class="full-width">
+                <span>{{ form.address.label.text }}</span>
+                {{ form.address(rows="3", placeholder="Registered business address") }}
+                {% for error in form.address.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            </label>
+            <label>
+                <span>{{ form.website.label.text }}</span>
+                {{ form.website(placeholder="https://example.com") }}
+                {% for error in form.website.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            </label>
+            <label>
+                <span>{{ form.invoice_prefix.label.text }}</span>
+                {{ form.invoice_prefix(placeholder="INV") }}
+                {% for error in form.invoice_prefix.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            </label>
+            <label>
+                <span>{{ form.password.label.text }}</span>
+                {{ form.password(placeholder="Minimum 8 characters") }}
+                {% for error in form.password.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            </label>
+            <label>
+                <span>{{ form.confirm_password.label.text }}</span>
+                {{ form.confirm_password(placeholder="Repeat password") }}
+                {% for error in form.confirm_password.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            </label>
+            <div class="full-width">
+                {{ form.submit(class_="btn btn-primary") }}
+            </div>
+        </form>
+        <div class="auth-links">
+            <a href="{{ url_for('auth.login') }}">Already have an account?</a>
+        </div>
+    </section>
+</main>
+{% endblock %}

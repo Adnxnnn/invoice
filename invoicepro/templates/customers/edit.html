@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ customer.name }} | InvoicePro{% endblock %}
+{% block body %}
+<main class="page-wrap">
+    <header class="topbar">
+        <div><p class="eyebrow">Customers</p><h1>Edit {{ customer.name }}</h1></div>
+        <div class="topbar-actions"><a href="{{ url_for('customers.detail', customer_id=customer.id) }}" class="btn btn-ghost">← Back</a></div>
+    </header>
+    <article class="panel" style="max-width:640px">
+        <form method="post">
+            {{ form.hidden_tag() }}
+            {% if form.errors %}
+            <div class="form-alert" style="margin-bottom:12px">
+                {% for field, errs in form.errors.items() %}{% for e in errs %}<p>{{ e }}</p>{% endfor %}{% endfor %}
+            </div>
+            {% endif %}
+            <div class="form-grid two-col" style="margin-top:0">
+                <label class="full-width"><span>{{ form.name.label.text }}</span>{{ form.name() }}{% for e in form.name.errors %}<span class="error">{{ e }}</span>{% endfor %}</label>
+                <label><span>{{ form.email.label.text }}</span>{{ form.email() }}{% for e in form.email.errors %}<span class="error">{{ e }}</span>{% endfor %}</label>
+                <label><span>{{ form.phone.label.text }}</span>{{ form.phone() }}</label>
+                <label><span>{{ form.gstin.label.text }}</span>{{ form.gstin() }}</label>
+                <label class="full-width"><span>{{ form.address.label.text }}</span>{{ form.address(rows="2") }}</label>
+                <label class="full-width"><span>{{ form.shipping_address.label.text }}</span>{{ form.shipping_address(rows="2") }}</label>
+                <label class="full-width"><span>{{ form.notes.label.text }}</span>{{ form.notes(rows="2") }}</label>
+            </div>
+            <div class="form-actions">
+                {{ form.submit(class_="btn btn-primary") }}
+                <a href="{{ url_for('customers.detail', customer_id=customer.id) }}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </article>
+</main>
+{% endblock %}

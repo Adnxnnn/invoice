@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ invoice.invoice_number }}</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #162033;
+            background: #f3f6fb;
+        }
+        .sheet {
+            width: min(900px, calc(100% - 32px));
+            margin: 32px auto;
+            background: #ffffff;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .row,
+        .meta,
+        .totals {
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+        }
+        .brand-lockup {
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+        }
+        .brand-lockup img,
+        .signature img {
+            max-width: 120px;
+            max-height: 72px;
+            object-fit: contain;
+        }
+        .meta-block,
+        .summary-block {
+            flex: 1;
+        }
+        h1, h2, p {
+            margin-top: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid #d8e0ee;
+        }
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #5b667a;
+        }
+        .totals {
+            margin-top: 32px;
+        }
+        .totals-card {
+            min-width: 280px;
+            margin-left: auto;
+        }
+        .totals-card div {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #d8e0ee;
+        }
+        .print-note {
+            margin-top: 24px;
+            color: #5b667a;
+            font-size: 14px;
+        }
+        .signature {
+            margin-top: 28px;
+            text-align: right;
+        }
+        @media print {
+            body {
+                background: #ffffff;
+            }
+            .sheet {
+                width: 100%;
+                margin: 0;
+                padding: 24px;
+            }
+            .print-note {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="sheet">
+        <section class="row">
+            <div>
+                <div class="brand-lockup">
+                    {% if invoice.user.company_settings.company_logo %}
+                        <img src="{{ url_for('uploaded_file', filename=invoice.user.company_settings.company_logo.removeprefix('uploads/')) }}" alt="Company logo">
+                    {% endif %}
+                    <div>
+                        <h1>{{ invoice.user.company_settings.company_name or invoice.user.name }}</h1>
+                        <p>{{ invoice.user.company_settings.address or "Business address not set" }}</p>
+                        <p>{{ invoice.user.company_settings.website or "Website not set" }}</p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h2>Invoice {{ invoice.invoice_number }}</h2>
+                <p>Status: {{ invoice.status }}</p>
+                <p>Invoice date: {{ invoice.invoice_date.strftime("%d %b %Y") }}</p>
+                <p>Due date: {{ invoice.due_date.strftime("%d %b %Y") }}</p>
+            </div>
+        </section>
+
+        <section class="meta">
+            <div class="meta-block">
+                <h2>Bill to</h2>
+                <p>{{ invoice.customer.name }}</p>
+                <p>{{ invoice.customer.email or "Email not set" }}</p>
+                <p>{{ invoice.customer.phone or "Phone not set" }}</p>
+                <p>{{ invoice.customer.address or "Address not set" }}</p>
+            </div>
+            <div class="summary-block">
+                <h2>Terms</h2>
+                <p>{{ invoice.payment_terms or "No payment terms added" }}</p>
+                <h2>Notes</h2>
+                <p>{{ invoice.notes or "No notes added" }}</p>
+                {% if invoice.user.company_settings.tax_information %}
+                    <h2>Business notes</h2>
+                    <p>{{ invoice.user.company_settings.tax_information }}</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit price</th>
+                    <th>Discount</th>
+                    <th>Line total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.items %}
+                    <tr>
+                        <td>{{ item.item_name }}</td>
+                        <td>{{ item.description or "Not set" }}</td>
+                        <td>{{ "%.2f"|format(item.quantity) }}</td>
+                        <td>INR {{ "%.2f"|format(item.unit_price) }}</td>
+                        <td>INR {{ "%.2f"|format(item.discount) }}</td>
+                        <td>INR {{ "%.2f"|format(item.line_total) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <section class="totals">
+            <div class="totals-card">
+                <div><span>Subtotal</span><strong>INR {{ "%.2f"|format(invoice.subtotal) }}</strong></div>
+                <div><span>Discount</span><strong>INR {{ "%.2f"|format(invoice.discount_total) }}</strong></div>
+                <div><span>Total</span><strong>INR {{ "%.2f"|format(invoice.total_amount) }}</strong></div>
+                <div><span>Paid</span><strong>INR {{ "%.2f"|format(invoice.amount_paid) }}</strong></div>
+                <div><span>Balance due</span><strong>INR {{ "%.2f"|format(invoice.balance_due) }}</strong></div>
+            </div>
+        </section>
+
+        {% if invoice.user.company_settings.signature %}
+            <section class="signature">
+                <img src="{{ url_for('uploaded_file', filename=invoice.user.company_settings.signature.removeprefix('uploads/')) }}" alt="Authorized signature">
+                <p>Authorized signature</p>
+            </section>
+        {% endif %}
+
+        <p class="print-note">Use your browser's Print dialog to save this document as PDF.</p>
+    </main>
+</body>
+</html>

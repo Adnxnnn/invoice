@@ -1,0 +1,10 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+instance/
+uploads/
+generated_invoices/
+.pytest_cache/
+.DS_Store

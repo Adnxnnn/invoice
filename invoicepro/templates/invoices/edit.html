@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ invoice.invoice_number }} | InvoicePro{% endblock %}
+{% block body %}
+<main class="page-wrap">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Edit Invoice</p>
+            <h1>{{ invoice.invoice_number }}</h1>
+        </div>
+        <div class="topbar-actions">
+            <a href="{{ url_for('invoices.detail', invoice_id=invoice.id) }}" class="btn btn-ghost">← Back</a>
+        </div>
+    </header>
+
+    <article class="panel">
+        <form method="post" id="invoice-form">
+            {{ form.hidden_tag() }}
+            <input type="hidden" id="items_json" name="items_json" value="">
+            <input type="hidden" id="existing-items-json" value="{{ existing_items_json }}">
+
+            {% if form.errors %}
+            <div class="form-alert" style="margin-bottom:16px">
+                <strong>Please fix the errors below.</strong>
+                {% for field, errs in form.errors.items() %}{% for e in errs %}<p>{{ e }}</p>{% endfor %}{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="form-grid two-col" style="margin-top:0">
+                <label>
+                    <span>{{ form.customer_id.label.text }}</span>
+                    {{ form.customer_id() }}
+                    {% for e in form.customer_id.errors %}<span class="error">{{ e }}</span>{% endfor %}
+                </label>
+                <label>
+                    <span>{{ form.transaction_type.label.text }}</span>
+                    {{ form.transaction_type(id="transaction_type") }}
+                </label>
+                <label>
+                    <span>{{ form.invoice_date.label.text }}</span>
+                    {{ form.invoice_date() }}
+                </label>
+                <label>
+                    <span>{{ form.due_date.label.text }}</span>
+                    {{ form.due_date() }}
+                    {% for e in form.due_date.errors %}<span class="error">{{ e }}</span>{% endfor %}
+                </label>
+                <label>
+                    <span>{{ form.status.label.text }}</span>
+                    {{ form.status() }}
+                </label>
+                <label>
+                    <span>{{ form.currency.label.text }}</span>
+                    {{ form.currency() }}
+                </label>
+                <label>
+                    <span>{{ form.template.label.text }}</span>
+                    {{ form.template() }}
+                </label>
+                <label>
+                    <span>{{ form.payment_terms.label.text }}</span>
+                    {{ form.payment_terms() }}
+                </label>
+                <label class="full-width">
+                    <span>{{ form.payment_link.label.text }}</span>
+                    {{ form.payment_link(placeholder="https://razorpay.me/@yourbusiness...") }}
+                </label>
+                <label class="full-width">
+                    <span>{{ form.notes.label.text }}</span>
+                    {{ form.notes(rows="3") }}
+                </label>
+            </div>
+
+            <div style="margin-top:20px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                    <h3 style="font-size:14px">Line Items</h3>
+                    <button type="button" id="add-item-btn" class="btn btn-secondary btn-sm">+ Add Row</button>
+                </div>
+                <div class="items-table-wrap">
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th><th>Item Name *</th><th>Description</th>
+                                <th>HSN/SAC</th><th>Qty</th><th>Unit Price</th>
+                                <th>Discount</th><th>GST %</th><th>Total</th><th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-tbody"></tbody>
+                    </table>
+                </div>
+                <div class="totals-panel" style="margin-top:14px">
+                    <div class="totals-row"><span>Subtotal</span><strong id="tot-subtotal">0.00</strong></div>
+                    <div class="totals-row"><span>Discount</span><strong id="tot-discount">0.00</strong></div>
+                    <div class="totals-row"><span>Taxable Amount</span><strong id="tot-taxable">0.00</strong></div>
+                    <div class="totals-row gst-row-intra"><span>CGST</span><strong id="tot-cgst">0.00</strong></div>
+                    <div class="totals-row gst-row-intra"><span>SGST</span><strong id="tot-sgst">0.00</strong></div>
+                    <div class="totals-row gst-row-inter" style="display:none"><span>IGST</span><strong id="tot-igst">0.00</strong></div>
+                    <div class="totals-row totals-grand"><span>Grand Total</span><strong id="tot-total">0.00</strong></div>
+                </div>
+            </div>
+
+            <div class="form-actions" style="margin-top:20px">
+                {{ form.submit(class_="btn btn-primary") }}
+                <a href="{{ url_for('invoices.detail', invoice_id=invoice.id) }}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </article>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/invoice_form.js') }}"></script>{% endblock %}

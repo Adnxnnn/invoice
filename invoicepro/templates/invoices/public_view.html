@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice {{ invoice.invoice_number }} | {{ invoice.user.company_settings.company_name or invoice.user.name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --panel: #141b2d;
+            --text: #f0f4fc;
+            --muted: #8a9dba;
+            --primary: #66e3ff;
+            --success: #2ed89a;
+            --border: rgba(255,255,255,0.08);
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0b0f19;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+        }
+        .public-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(20, 27, 45, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        .public-bar .brand-title {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .public-bar .actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+        .btn-pay {
+            background: linear-gradient(135deg, #2ed89a, #00b875);
+            color: #052014;
+            box-shadow: 0 4px 14px rgba(46, 216, 154, 0.3);
+        }
+        .btn-pay:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(46, 216, 154, 0.4);
+        }
+        .btn-print {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            border: 1px solid var(--border);
+        }
+        .btn-print:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        .doc-container {
+            max-width: 900px;
+            margin: 30px auto;
+            background: #fff;
+            color: #111;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        @media print {
+            .public-bar { display: none !important; }
+            .doc-container { margin: 0; box-shadow: none; border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="public-bar">
+        <div class="brand-title">
+            <span>⚡</span>
+            <span>{{ invoice.user.company_settings.company_name or invoice.user.name }}</span>
+            <span style="color:var(--muted);font-weight:400;font-size:14px">| Invoice {{ invoice.invoice_number }}</span>
+        </div>
+        <div class="actions">
+            {% if invoice.payment_link and invoice.status not in ['Paid', 'Cancelled'] %}
+            <a href="{{ invoice.payment_link }}" target="_blank" class="btn btn-pay">💳 Pay Online Now</a>
+            {% endif %}
+            <button onclick="window.print()" class="btn btn-print">🖨 Print / Save PDF</button>
+        </div>
+    </div>
+
+    <div class="doc-container">
+        {% include "invoices/" ~ template_name ~ ".html" %}
+    </div>
+</body>
+</html>

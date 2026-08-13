@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Products | InvoicePro{% endblock %}
+{% block body %}
+<main class="page-wrap">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Products</p>
+            <h1>Product & Service Catalogue</h1>
+            <p class="muted">Manage your products and services.</p>
+        </div>
+    </header>
+
+    <div class="workspace-grid">
+        <!-- Add Product Form -->
+        <article class="panel">
+            <h2 style="margin-bottom:4px">Add Product / Service</h2>
+            <form method="post">
+                {{ form.hidden_tag() }}
+                {% if form.errors %}
+                <div class="form-alert" style="margin:12px 0">
+                    {% for field, errs in form.errors.items() %}{% for e in errs %}<p>{{ e }}</p>{% endfor %}{% endfor %}
+                </div>
+                {% endif %}
+                <div class="form-grid two-col" style="margin-top:12px">
+                    <label class="full-width"><span>{{ form.name.label.text }}</span>{{ form.name(placeholder="Product or service name") }}{% for e in form.name.errors %}<span class="error">{{ e }}</span>{% endfor %}</label>
+                    <label class="full-width"><span>{{ form.description.label.text }}</span>{{ form.description(rows="2", placeholder="Brief description") }}</label>
+                    <label><span>{{ form.hsn_sac.label.text }}</span>{{ form.hsn_sac(placeholder="e.g. 998313") }}</label>
+                    <label><span>{{ form.unit.label.text }}</span>{{ form.unit(placeholder="Nos, Hrs, Kg...") }}</label>
+                    <label><span>{{ form.price.label.text }}</span>{{ form.price(step="0.01", min="0") }}{% for e in form.price.errors %}<span class="error">{{ e }}</span>{% endfor %}</label>
+                    <label><span>{{ form.gst_rate.label.text }}</span>{{ form.gst_rate() }}</label>
+                </div>
+                <div class="form-actions"><button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button></div>
+            </form>
+        </article>
+
+        <!-- Product List -->
+        <article class="panel">
+            <div class="section-heading">
+                <h2>All Products</h2>
+                <form method="get" style="display:flex;gap:8px">
+                    <input type="search" name="q" value="{{ search }}" placeholder="Search..." style="width:180px">
+                    <button class="btn btn-secondary btn-sm">Search</button>
+                    {% if search %}<a href="{{ url_for('products.index') }}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+                </form>
+            </div>
+            {% if products %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Name</th><th>HSN/SAC</th><th>Unit</th><th>Price</th><th>GST %</th><th>Status</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for p in products %}
+                        <tr {% if not p.is_active %}style="opacity:0.55"{% endif %}>
+                            <td>
+                                <strong>{{ p.name }}</strong>
+                                {% if p.description %}<br><span class="muted" style="font-size:12px">{{ p.description[:60] }}</span>{% endif %}
+                            </td>
+                            <td>{{ p.hsn_sac or "—" }}</td>
+                            <td>{{ p.unit }}</td>
+                            <td>{{ "%.2f"|format(p.price) }}</td>
+                            <td>{{ "%.0f"|format(p.gst_rate) }}%</td>
+                            <td><span class="badge {% if p.is_active %}badge-Paid{% else %}badge-Cancelled{% endif %}">{{ "Active" if p.is_active else "Archived" }}</span></td>
+                            <td>
+                                <div class="table-actions">
+                                    <a href="{{ url_for('products.edit', product_id=p.id) }}" class="btn btn-ghost btn-xs">Edit</a>
+                                    <form method="post" action="{{ url_for('products.archive', product_id=p.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn-link-muted btn-xs">{{ "Archive" if p.is_active else "Restore" }}</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📦</div>
+                <h3>{{ "No results" if search else "No products yet" }}</h3>
+                <p class="muted">Add your first product using the form.</p>
+            </div>
+            {% endif %}
+        </article>
+    </div>
+</main>
+{% endblock %}

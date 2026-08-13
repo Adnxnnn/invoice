@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ invoice.invoice_number }} – Modern</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: A4; margin: 14mm 12mm; }
+  body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; color: #1e1b4b; background: #fff; font-size: 11pt; }
+  .shell { max-width: 840px; margin: 0 auto; }
+
+  /* Violet gradient header */
+  .header { background: linear-gradient(135deg, #6c63ff 0%, #3b34d1 100%); color: #fff; padding: 30px 34px; border-radius: 0 0 28px 28px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .company-name { font-size: 20pt; font-weight: 800; letter-spacing: -0.03em; }
+  .company-meta { font-size: 8.5pt; opacity: 0.8; margin-top: 6px; line-height: 1.65; }
+  .inv-right { text-align: right; }
+  .inv-word { font-size: 26pt; font-weight: 800; letter-spacing: 0.08em; opacity: 0.18; }
+  .inv-num { font-size: 14pt; font-weight: 700; background: rgba(255,255,255,0.2); padding: 5px 14px; border-radius: 8px; margin-top: 6px; display: inline-block; }
+
+  /* Body */
+  .body-wrap { padding: 28px 34px; }
+
+  /* Dates strip */
+  .dates-strip { display: flex; gap: 0; margin-bottom: 24px; border-radius: 12px; overflow: hidden; border: 1px solid #e0ddff; }
+  .date-cell { flex: 1; padding: 12px 16px; border-right: 1px solid #e0ddff; }
+  .date-cell:last-child { border-right: none; }
+  .date-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #6c63ff; margin-bottom: 3px; }
+  .date-val { font-weight: 700; font-size: 11pt; color: #1e1b4b; }
+
+  /* Bill to / From */
+  .parties { display: flex; gap: 24px; margin-bottom: 24px; }
+  .party { flex: 1; }
+  .party-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: #6c63ff; margin-bottom: 6px; }
+  .party-name { font-size: 13pt; font-weight: 700; color: #1e1b4b; margin-bottom: 4px; }
+  .party-meta { font-size: 9pt; color: #555; line-height: 1.65; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 22px; font-size: 10pt; }
+  thead th { background: #6c63ff; color: #fff; padding: 10px 12px; text-align: left; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.1em; }
+  thead th.r { text-align: right; }
+  tbody tr:nth-child(odd) { background: #f8f7ff; }
+  td { padding: 10px 12px; border-bottom: 1px solid #ede8ff; color: #333; }
+  td.r { text-align: right; }
+  .iname { font-weight: 700; color: #1e1b4b; }
+  .idesc { font-size: 8.5pt; color: #777; }
+
+  /* Totals */
+  .foot { display: flex; justify-content: flex-end; margin-bottom: 24px; }
+  .tbox { width: 280px; border: 1px solid #e0ddff; border-radius: 12px; overflow: hidden; }
+  .trow { display: flex; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid #e0ddff; font-size: 10pt; }
+  .trow:last-child { border-bottom: none; }
+  .tl { color: #777; }
+  .tv { font-weight: 600; }
+  .tgrand { background: linear-gradient(135deg, #6c63ff, #3b34d1); color: #fff; }
+  .tgrand .tl, .tgrand .tv { color: #fff !important; font-size: 12pt; font-weight: 800; }
+
+  /* Notes */
+  .notes-row { display: flex; gap: 20px; font-size: 9.5pt; color: #444; margin-bottom: 20px; }
+  .note-block { flex: 1; }
+  .note-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #6c63ff; margin-bottom: 4px; }
+
+  .footer-txt { text-align: center; font-size: 8.5pt; color: #aaa; border-top: 1px solid #e5e5f5; padding-top: 10px; }
+
+  .no-print { text-align: center; padding: 16px 0; }
+  .pbtn { background: linear-gradient(135deg, #6c63ff, #3b34d1); color: #fff; border: none; padding: 10px 28px; border-radius: 8px; font-size: 11pt; cursor: pointer; }
+  @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+{% if not print_mode %}
+<div class="no-print"><button class="pbtn" onclick="window.print()">🖨 Print / Save as PDF</button></div>
+{% endif %}
+{% set cs = invoice.user.company_settings %}
+<div class="shell">
+  <div class="header">
+    <div>
+      {% if cs.company_logo %}<img src="{{ request.url_root.rstrip('/') }}/{{ cs.company_logo }}" alt="" style="max-height:50px;margin-bottom:8px;display:block">{% endif %}
+      <div class="company-name">{{ cs.company_name or invoice.user.name }}</div>
+      <div class="company-meta">
+        {% if cs.address %}{{ cs.address }}<br>{% endif %}
+        {% if cs.phone %}{{ cs.phone }} · {% endif %}
+        {% if cs.email %}{{ cs.email }}<br>{% endif %}
+        {% if cs.gstin %}GSTIN: {{ cs.gstin }}{% endif %}
+      </div>
+    </div>
+    <div class="inv-right">
+      <div class="inv-word">INVOICE</div>
+      <div class="inv-num">{{ invoice.invoice_number }}</div>
+    </div>
+  </div>
+
+  <div class="body-wrap">
+    <div class="dates-strip">
+      <div class="date-cell"><div class="date-label">Invoice Date</div><div class="date-val">{{ invoice.invoice_date.strftime("%d %b %Y") }}</div></div>
+      <div class="date-cell"><div class="date-label">Due Date</div><div class="date-val">{{ invoice.due_date.strftime("%d %b %Y") }}</div></div>
+      <div class="date-cell"><div class="date-label">Status</div><div class="date-val">{{ invoice.status }}</div></div>
+      {% if invoice.payment_terms %}<div class="date-cell"><div class="date-label">Terms</div><div class="date-val">{{ invoice.payment_terms }}</div></div>{% endif %}
+    </div>
+
+    <div class="parties">
+      <div class="party">
+        <div class="party-label">Bill To</div>
+        <div class="party-name">{{ invoice.customer.name }}</div>
+        <div class="party-meta">
+          {% if invoice.customer.address %}{{ invoice.customer.address }}<br>{% endif %}
+          {% if invoice.customer.email %}{{ invoice.customer.email }}<br>{% endif %}
+          {% if invoice.customer.phone %}{{ invoice.customer.phone }}<br>{% endif %}
+          {% if invoice.customer.gstin %}GSTIN: {{ invoice.customer.gstin }}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <table>
+      <thead><tr><th>Item</th><th>HSN</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Disc</th><th class="r">GST%</th><th class="r">Tax</th><th class="r">Total</th></tr></thead>
+      <tbody>
+        {% for item in invoice.items %}
+        <tr>
+          <td><div class="iname">{{ item.item_name }}</div>{% if item.description %}<div class="idesc">{{ item.description }}</div>{% endif %}</td>
+          <td>{{ item.hsn_sac or "—" }}</td>
+          <td class="r">{{ "%.2f"|format(item.quantity) }}</td>
+          <td class="r">{{ "%.2f"|format(item.unit_price) }}</td>
+          <td class="r">{{ "%.2f"|format(item.discount) }}</td>
+          <td class="r">{{ "%.1f"|format(item.gst_rate) }}%</td>
+          <td class="r">{{ "%.2f"|format(item.tax_amount) }}</td>
+          <td class="r"><strong>{{ "%.2f"|format(item.line_total) }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="foot">
+      <div class="tbox">
+        <div class="trow"><span class="tl">Subtotal</span><span class="tv">{{ invoice.currency }} {{ "%.2f"|format(invoice.subtotal) }}</span></div>
+        <div class="trow"><span class="tl">Discount</span><span class="tv">- {{ "%.2f"|format(invoice.discount_total) }}</span></div>
+        <div class="trow"><span class="tl">Taxable</span><span class="tv">{{ "%.2f"|format(invoice.taxable_amount) }}</span></div>
+        {% if invoice.cgst_amount > 0 %}
+        <div class="trow"><span class="tl">CGST</span><span class="tv">{{ "%.2f"|format(invoice.cgst_amount) }}</span></div>
+        <div class="trow"><span class="tl">SGST</span><span class="tv">{{ "%.2f"|format(invoice.sgst_amount) }}</span></div>
+        {% endif %}
+        {% if invoice.igst_amount > 0 %}
+        <div class="trow"><span class="tl">IGST</span><span class="tv">{{ "%.2f"|format(invoice.igst_amount) }}</span></div>
+        {% endif %}
+        <div class="trow tgrand"><span class="tl">TOTAL</span><span class="tv">{{ invoice.currency }} {{ "%.2f"|format(invoice.total_amount) }}</span></div>
+        {% if invoice.amount_paid > 0 %}
+        <div class="trow"><span class="tl">Paid</span><span class="tv" style="color:green">{{ "%.2f"|format(invoice.amount_paid) }}</span></div>
+        <div class="trow"><span class="tl">Balance</span><span class="tv" style="color:red">{{ "%.2f"|format(invoice.balance_due) }}</span></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="notes-row">
+      {% if cs.payment_instructions %}<div class="note-block"><div class="note-label">Payment</div>{{ cs.payment_instructions }}</div>{% endif %}
+      {% if invoice.notes %}<div class="note-block"><div class="note-label">Notes</div>{{ invoice.notes }}</div>{% endif %}
+      {% if cs.signature %}<div class="note-block" style="text-align:right"><div class="note-label">Signature</div><img src="{{ request.url_root.rstrip('/') }}/{{ cs.signature }}" style="max-height:55px;margin-top:4px"></div>{% endif %}
+    </div>
+
+    {% if cs.footer_text %}<div class="footer-txt">{{ cs.footer_text }}</div>{% endif %}
+  </div>
+</div>
+</body>
+</html>

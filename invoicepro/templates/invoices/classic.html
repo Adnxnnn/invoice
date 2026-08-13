@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ invoice.invoice_number }} – Classic</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: A4; margin: 16mm 14mm; }
+  body { font-family: 'Georgia', 'Times New Roman', serif; color: #1a1a2e; background: #fff; font-size: 11pt; line-height: 1.55; }
+  .invoice-shell { max-width: 820px; margin: 0 auto; padding: 32px; }
+
+  /* Header */
+  .inv-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 22px; border-bottom: 3px solid #1a233b; margin-bottom: 24px; }
+  .company-name { font-size: 22pt; font-weight: 700; color: #1a233b; letter-spacing: -0.02em; }
+  .company-meta { font-size: 9pt; color: #555; margin-top: 6px; line-height: 1.6; }
+  .inv-badge { text-align: right; }
+  .inv-title { font-size: 28pt; font-weight: 700; color: #1a233b; letter-spacing: 0.06em; }
+  .inv-number { font-size: 12pt; color: #66e3ff; background: #1a233b; padding: 4px 12px; border-radius: 4px; margin-top: 6px; display: inline-block; font-family: monospace; }
+
+  /* Meta grid */
+  .meta-row { display: flex; gap: 24px; margin-bottom: 22px; }
+  .meta-box { flex: 1; }
+  .meta-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: #888; margin-bottom: 4px; }
+  .meta-value { font-size: 11pt; font-weight: 600; color: #1a233b; }
+  .meta-value.big { font-size: 13pt; }
+
+  /* Bill to */
+  .bill-to { background: #f7f9ff; border-left: 4px solid #1a233b; padding: 14px 18px; margin-bottom: 22px; border-radius: 0 8px 8px 0; }
+  .bill-to .meta-label { margin-bottom: 6px; }
+  .bill-to .cname { font-size: 14pt; font-weight: 700; color: #1a233b; }
+  .bill-to p { font-size: 9.5pt; color: #444; margin: 2px 0; }
+
+  /* Items table */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10pt; }
+  thead th { background: #1a233b; color: #fff; padding: 10px 12px; text-align: left; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.1em; }
+  thead th.right { text-align: right; }
+  tbody tr:nth-child(even) { background: #f4f7ff; }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid #e0e8f5; color: #333; }
+  tbody td.right { text-align: right; }
+  .item-name { font-weight: 600; color: #1a233b; }
+  .item-desc { font-size: 9pt; color: #666; }
+
+  /* Totals */
+  .totals-wrap { display: flex; justify-content: flex-end; margin-bottom: 28px; }
+  .totals-box { width: 300px; }
+  .tot-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eef; font-size: 10.5pt; }
+  .tot-row:last-child { border-bottom: none; }
+  .tot-row .label { color: #666; }
+  .tot-row .val { font-weight: 600; color: #1a233b; }
+  .tot-grand { background: #1a233b; color: #fff !important; padding: 10px 14px; border-radius: 8px; margin-top: 8px; }
+  .tot-grand .label, .tot-grand .val { color: #fff !important; font-size: 13pt; font-weight: 700; }
+
+  /* Footer */
+  .inv-footer { border-top: 1px solid #dde; padding-top: 16px; display: flex; justify-content: space-between; gap: 24px; }
+  .inv-footer .section { flex: 1; }
+  .inv-footer .section-title { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #888; margin-bottom: 6px; }
+  .inv-footer .section-body { font-size: 9.5pt; color: #444; line-height: 1.6; }
+  .sig-wrap { text-align: right; }
+  .sig-img { max-height: 60px; margin-bottom: 4px; }
+  .sig-name { font-weight: 700; font-size: 10pt; color: #1a233b; }
+  .footer-text { margin-top: 14px; font-size: 8.5pt; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+
+  /* Print helper */
+  .no-print { margin-bottom: 20px; text-align: center; }
+  @media print { .no-print { display: none; } }
+  .print-btn { background: #1a233b; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-size: 11pt; cursor: pointer; }
+</style>
+</head>
+<body>
+{% if not print_mode %}
+<div class="no-print">
+  <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+</div>
+{% endif %}
+<div class="invoice-shell">
+  {% set cs = invoice.user.company_settings %}
+
+  <!-- Header -->
+  <div class="inv-header">
+    <div>
+      {% if cs.company_logo %}
+      <img src="{{ request.url_root.rstrip('/') }}/{{ cs.company_logo }}" alt="Logo" style="max-height:60px;margin-bottom:8px;display:block">
+      {% endif %}
+      <div class="company-name">{{ cs.company_name or invoice.user.name }}</div>
+      <div class="company-meta">
+        {% if cs.address %}{{ cs.address }}<br>{% endif %}
+        {% if cs.phone %}{{ cs.phone }} &nbsp;·&nbsp; {% endif %}
+        {% if cs.email %}{{ cs.email }}<br>{% endif %}
+        {% if cs.gstin %}GSTIN: {{ cs.gstin }}{% endif %}
+      </div>
+    </div>
+    <div class="inv-badge">
+      <div class="inv-title">INVOICE</div>
+      <div class="inv-number">{{ invoice.invoice_number }}</div>
+    </div>
+  </div>
+
+  <!-- Meta -->
+  <div class="meta-row">
+    <div class="meta-box"><div class="meta-label">Invoice Date</div><div class="meta-value">{{ invoice.invoice_date.strftime("%d %B %Y") }}</div></div>
+    <div class="meta-box"><div class="meta-label">Due Date</div><div class="meta-value">{{ invoice.due_date.strftime("%d %B %Y") }}</div></div>
+    <div class="meta-box"><div class="meta-label">Status</div><div class="meta-value">{{ invoice.status }}</div></div>
+    {% if invoice.payment_terms %}<div class="meta-box"><div class="meta-label">Terms</div><div class="meta-value">{{ invoice.payment_terms }}</div></div>{% endif %}
+  </div>
+
+  <!-- Bill To -->
+  <div class="bill-to">
+    <div class="meta-label">Bill To</div>
+    <div class="cname">{{ invoice.customer.name }}</div>
+    {% if invoice.customer.address %}<p>{{ invoice.customer.address }}</p>{% endif %}
+    {% if invoice.customer.email %}<p>{{ invoice.customer.email }}</p>{% endif %}
+    {% if invoice.customer.phone %}<p>{{ invoice.customer.phone }}</p>{% endif %}
+    {% if invoice.customer.gstin %}<p>GSTIN: {{ invoice.customer.gstin }}</p>{% endif %}
+  </div>
+
+  <!-- Items -->
+  <table>
+    <thead>
+      <tr>
+        <th style="width:28%">Item / Service</th>
+        <th>HSN/SAC</th>
+        <th class="right">Qty</th>
+        <th class="right">Unit Price</th>
+        <th class="right">Discount</th>
+        <th class="right">GST %</th>
+        <th class="right">Tax</th>
+        <th class="right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in invoice.items %}
+      <tr>
+        <td>
+          <div class="item-name">{{ item.item_name }}</div>
+          {% if item.description %}<div class="item-desc">{{ item.description }}</div>{% endif %}
+        </td>
+        <td>{{ item.hsn_sac or "—" }}</td>
+        <td class="right">{{ "%.2f"|format(item.quantity) }}</td>
+        <td class="right">{{ "%.2f"|format(item.unit_price) }}</td>
+        <td class="right">{{ "%.2f"|format(item.discount) }}</td>
+        <td class="right">{{ "%.1f"|format(item.gst_rate) }}%</td>
+        <td class="right">{{ "%.2f"|format(item.tax_amount) }}</td>
+        <td class="right"><strong>{{ "%.2f"|format(item.line_total) }}</strong></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Totals -->
+  <div class="totals-wrap">
+    <div class="totals-box">
+      <div class="tot-row"><span class="label">Subtotal</span><span class="val">{{ invoice.currency }} {{ "%.2f"|format(invoice.subtotal) }}</span></div>
+      <div class="tot-row"><span class="label">Discount</span><span class="val">- {{ "%.2f"|format(invoice.discount_total) }}</span></div>
+      <div class="tot-row"><span class="label">Taxable Amount</span><span class="val">{{ "%.2f"|format(invoice.taxable_amount) }}</span></div>
+      {% if invoice.cgst_amount > 0 %}
+      <div class="tot-row"><span class="label">CGST</span><span class="val">{{ "%.2f"|format(invoice.cgst_amount) }}</span></div>
+      <div class="tot-row"><span class="label">SGST</span><span class="val">{{ "%.2f"|format(invoice.sgst_amount) }}</span></div>
+      {% endif %}
+      {% if invoice.igst_amount > 0 %}
+      <div class="tot-row"><span class="label">IGST</span><span class="val">{{ "%.2f"|format(invoice.igst_amount) }}</span></div>
+      {% endif %}
+      <div class="tot-row tot-grand">
+        <span class="label">TOTAL DUE</span>
+        <span class="val">{{ invoice.currency }} {{ "%.2f"|format(invoice.total_amount) }}</span>
+      </div>
+      {% if invoice.amount_paid > 0 %}
+      <div class="tot-row" style="margin-top:8px"><span class="label">Amount Paid</span><span class="val" style="color:green">{{ "%.2f"|format(invoice.amount_paid) }}</span></div>
+      <div class="tot-row"><span class="label">Balance Due</span><span class="val" style="color:red;font-size:12pt">{{ "%.2f"|format(invoice.balance_due) }}</span></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="inv-footer">
+    {% if cs.payment_instructions %}
+    <div class="section">
+      <div class="section-title">Payment Instructions</div>
+      <div class="section-body">{{ cs.payment_instructions }}</div>
+    </div>
+    {% endif %}
+    {% if invoice.notes %}
+    <div class="section">
+      <div class="section-title">Notes</div>
+      <div class="section-body">{{ invoice.notes }}</div>
+    </div>
+    {% endif %}
+    {% if cs.signature %}
+    <div class="section sig-wrap">
+      <div class="section-title">Authorized Signature</div>
+      <img class="sig-img" src="{{ request.url_root.rstrip('/') }}/{{ cs.signature }}" alt="Signature">
+      <div class="sig-name">{{ cs.company_name or invoice.user.name }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if cs.footer_text %}
+  <div class="footer-text">{{ cs.footer_text }}</div>
+  {% endif %}
+</div>
+</body>
+</html>

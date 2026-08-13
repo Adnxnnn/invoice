@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | InvoicePro{% endblock %}
+{% block body %}
+<main class="page-wrap">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Dashboard</p>
+            <h1>Welcome back, {{ current_user.name }}</h1>
+            <p class="muted">Here's your business at a glance.</p>
+        </div>
+        <div class="topbar-actions">
+            <a href="{{ url_for('invoices.index') }}" class="btn btn-primary">+ New Invoice</a>
+            <a href="{{ url_for('customers.index') }}" class="btn btn-secondary">+ Customer</a>
+        </div>
+    </header>
+
+    <!-- Stats -->
+    <section class="stats-grid">
+        <article class="stat-card stat-revenue">
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value">{{ "%.0f"|format(summary.total_revenue) }}</div>
+            <div class="muted" style="font-size:12px">{{ summary.total_invoices }} invoice{{ 's' if summary.total_invoices != 1 }}</div>
+        </article>
+        <article class="stat-card stat-paid">
+            <div class="stat-label">Collected</div>
+            <div class="stat-value">{{ "%.0f"|format(summary.paid_amount) }}</div>
+            <div class="muted" style="font-size:12px">Total paid</div>
+        </article>
+        <article class="stat-card stat-pending">
+            <div class="stat-label">Pending</div>
+            <div class="stat-value">{{ "%.0f"|format(summary.pending_amount) }}</div>
+            <div class="muted" style="font-size:12px">Awaiting payment</div>
+        </article>
+        <article class="stat-card stat-overdue">
+            <div class="stat-label">Overdue</div>
+            <div class="stat-value">{{ "%.0f"|format(summary.overdue_amount) }}</div>
+            <div class="muted" style="font-size:12px">Past due date</div>
+        </article>
+    </section>
+
+    <!-- Secondary stats -->
+    <section class="three-grid" style="margin-bottom:20px">
+        <article class="panel" style="display:flex;gap:16px;align-items:center">
+            <div style="font-size:2rem">📄</div>
+            <div><div class="stat-label">Total Invoices</div><div style="font-size:1.5rem;font-weight:800">{{ summary.total_invoices }}</div></div>
+        </article>
+        <article class="panel" style="display:flex;gap:16px;align-items:center">
+            <div style="font-size:2rem">👥</div>
+            <div><div class="stat-label">Customers</div><div style="font-size:1.5rem;font-weight:800">{{ summary.total_customers }}</div></div>
+        </article>
+        <article class="panel" style="display:flex;gap:16px;align-items:center">
+            <div style="font-size:2rem">📦</div>
+            <div><div class="stat-label">Products</div><div style="font-size:1.5rem;font-weight:800">{{ summary.total_products }}</div></div>
+        </article>
+    </section>
+
+    <!-- Charts -->
+    <section class="panel-grid" style="margin-bottom:20px">
+        <article class="panel">
+            <div class="section-heading">
+                <h2>Monthly Revenue</h2>
+                <span class="muted" style="font-size:12px">{{ summary.chart_monthly.labels[-1] if summary.chart_monthly.labels }}</span>
+            </div>
+            <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+        </article>
+        <article class="panel">
+            <div class="section-heading"><h2>Invoice Status</h2></div>
+            <div class="chart-wrap"><canvas id="statusChart"></canvas></div>
+        </article>
+    </section>
+
+    <!-- Top Customers + Products -->
+    <section class="panel-grid" style="margin-bottom:20px">
+        <article class="panel">
+            <div class="section-heading">
+                <h2>Top Customers</h2>
+                <a href="{{ url_for('customers.index') }}" class="btn btn-ghost btn-sm">View all</a>
+            </div>
+            {% if summary.top_customers %}
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Customer</th><th>Invoices</th><th>Revenue</th></tr></thead>
+                    <tbody>
+                        {% for c in summary.top_customers %}
+                        <tr>
+                            <td><strong>{{ c.name }}</strong></td>
+                            <td>{{ c.invoice_count }}</td>
+                            <td>{{ "%.2f"|format(c.total) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state"><p class="muted">No customer data yet.</p></div>
+            {% endif %}
+        </article>
+        <article class="panel">
+            <div class="section-heading">
+                <h2>Best-Selling Products</h2>
+                <a href="{{ url_for('products.index') }}" class="btn btn-ghost btn-sm">View all</a>
+            </div>
+            {% if summary.top_products %}
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Product</th><th>Qty Sold</th><th>Revenue</th></tr></thead>
+                    <tbody>
+                        {% for p in summary.top_products %}
+                        <tr>
+                            <td><strong>{{ p.name }}</strong></td>
+                            <td>{{ "%.0f"|format(p.quantity) }}</td>
+                            <td>{{ "%.2f"|format(p.revenue) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state"><p class="muted">No product sales data yet.</p></div>
+            {% endif %}
+        </article>
+    </section>
+
+    <!-- Recent Invoices -->
+    <article class="panel">
+        <div class="section-heading">
+            <div>
+                <h2>Recent Invoices</h2>
+                <p class="muted">Your latest 10 invoices.</p>
+            </div>
+            <a href="{{ url_for('invoices.index') }}" class="btn btn-secondary btn-sm">All invoices</a>
+        </div>
+        {% if summary.recent_invoices %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Due</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Balance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in summary.recent_invoices %}
+                    <tr>
+                        <td><strong>{{ inv.invoice_number }}</strong></td>
+                        <td>{{ inv.customer.name }}</td>
+                        <td>{{ inv.invoice_date.strftime("%d %b %Y") }}</td>
+                        <td>{{ inv.due_date.strftime("%d %b %Y") }}</td>
+                        <td><span class="badge badge-{{ inv.status }}">{{ inv.status }}</span></td>
+                        <td>{{ inv.currency }} {{ "%.2f"|format(inv.total_amount) }}</td>
+                        <td>{{ inv.currency }} {{ "%.2f"|format(inv.balance_due) }}</td>
+                        <td>
+                            <div class="table-actions">
+                                <a href="{{ url_for('invoices.detail', invoice_id=inv.id) }}" class="btn btn-ghost btn-xs">View</a>
+                                <a href="{{ url_for('invoices.download_pdf', invoice_id=inv.id) }}" class="btn btn-ghost btn-xs">PDF</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📄</div>
+            <h3>No invoices yet</h3>
+            <p class="muted">Create your first invoice to start tracking revenue.</p>
+            <a href="{{ url_for('invoices.index') }}" class="btn btn-primary btn-sm" style="margin-top:8px">Create invoice</a>
+        </div>
+        {% endif %}
+    </article>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script id="monthly-data" type="application/json">
+    {{ summary.chart_monthly | tojson | safe }}
+</script>
+<script id="status-data" type="application/json">
+    {{ summary.status_counts | tojson | safe }}
+</script>
+<script>
+const monthlyData = JSON.parse(document.getElementById('monthly-data').textContent);
+const statusData  = JSON.parse(document.getElementById('status-data').textContent);
+
+Chart.defaults.color = '#8a9dba';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.08)';
+
+// Monthly bar chart
+new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: {
+        labels: monthlyData.labels,
+        datasets: [
+            { label: 'Revenue', data: monthlyData.revenue, backgroundColor: 'rgba(102,227,255,0.3)', borderColor: '#66e3ff', borderWidth: 2, borderRadius: 6 },
+            { label: 'Collected', data: monthlyData.paid,  backgroundColor: 'rgba(46,216,154,0.3)',  borderColor: '#2ed89a', borderWidth: 2, borderRadius: 6 }
+        ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.06)' } }, y: { grid: { color: 'rgba(255,255,255,0.06)' }, beginAtZero: true } } }
+});
+
+// Status doughnut
+const labels  = Object.keys(statusData);
+const values  = Object.values(statusData);
+const colors  = { Draft: '#8a9dba', Sent: '#66e3ff', Pending: '#f7b955', Paid: '#2ed89a', Overdue: '#ff6b85', Cancelled: '#444' };
+new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+        labels: labels,
+        datasets: [{ data: values, backgroundColor: labels.map(l => colors[l] || '#888'), borderColor: 'transparent', hoverOffset: 6 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, cutout: '68%' }
+});
+</script>
+{% endblock %}
