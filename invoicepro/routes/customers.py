@@ -23,20 +23,29 @@ def index():
     search = (request.args.get("q") or "").strip()
     form = CustomerForm()
     if form.validate_on_submit():
-        customer = Customer(
-            user_id=current_user.id,
-            name=form.name.data.strip(),
-            email=(form.email.data or "").strip().lower() or None,
-            phone=(form.phone.data or "").strip() or None,
-            address=(form.address.data or "").strip() or None,
-            shipping_address=(form.shipping_address.data or "").strip() or None,
-            gstin=(form.gstin.data or "").strip().upper() or None,
-            notes=(form.notes.data or "").strip() or None,
-        )
-        db.session.add(customer)
-        db.session.commit()
-        flash("Customer created.", "success")
-        return redirect(url_for("customers.index"))
+        email = (form.email.data or "").strip().lower() or None
+        existing = Customer.query.filter_by(user_id=current_user.id, email=email).first() if email else None
+        if existing:
+            flash(f"A customer with email '{email}' already exists.", "danger")
+        else:
+            customer = Customer(
+                user_id=current_user.id,
+                name=form.name.data.strip(),
+                email=email,
+                phone=(form.phone.data or "").strip() or None,
+                address=(form.address.data or "").strip() or None,
+                shipping_address=(form.shipping_address.data or "").strip() or None,
+                gstin=(form.gstin.data or "").strip().upper() or None,
+                notes=(form.notes.data or "").strip() or None,
+            )
+            db.session.add(customer)
+            try:
+                db.session.commit()
+                flash("Customer created.", "success")
+                return redirect(url_for("customers.index"))
+            except Exception:
+                db.session.rollback()
+                flash("Could not create customer (duplicate email or invalid data).", "danger")
 
     q = Customer.query.filter_by(user_id=current_user.id)
     if search:

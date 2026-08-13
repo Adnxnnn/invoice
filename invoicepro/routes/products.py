@@ -23,19 +23,28 @@ def index():
     search = (request.args.get("q") or "").strip()
     form = ProductForm(unit="Nos", price=0, gst_rate="18")
     if form.validate_on_submit():
-        product = Product(
-            user_id=current_user.id,
-            name=form.name.data.strip(),
-            description=(form.description.data or "").strip() or None,
-            hsn_sac=(form.hsn_sac.data or "").strip() or None,
-            price=form.price.data,
-            gst_rate=form.gst_rate.data,
-            unit=form.unit.data.strip(),
-        )
-        db.session.add(product)
-        db.session.commit()
-        flash("Product created.", "success")
-        return redirect(url_for("products.index"))
+        name = form.name.data.strip()
+        existing = Product.query.filter_by(user_id=current_user.id, name=name).first()
+        if existing:
+            flash(f"A product named '{name}' already exists.", "danger")
+        else:
+            product = Product(
+                user_id=current_user.id,
+                name=name,
+                description=(form.description.data or "").strip() or None,
+                hsn_sac=(form.hsn_sac.data or "").strip() or None,
+                price=form.price.data,
+                gst_rate=form.gst_rate.data,
+                unit=form.unit.data.strip(),
+            )
+            db.session.add(product)
+            try:
+                db.session.commit()
+                flash("Product created.", "success")
+                return redirect(url_for("products.index"))
+            except Exception:
+                db.session.rollback()
+                flash(f"A product named '{name}' already exists.", "danger")
 
     q = Product.query.filter_by(user_id=current_user.id)
     if search:
@@ -58,15 +67,28 @@ def edit(product_id):
     if request.method == "GET":
         form.gst_rate.data = str(int(product.gst_rate))
     if form.validate_on_submit():
-        product.name = form.name.data.strip()
-        product.description = (form.description.data or "").strip() or None
-        product.hsn_sac = (form.hsn_sac.data or "").strip() or None
-        product.price = form.price.data
-        product.gst_rate = form.gst_rate.data
-        product.unit = form.unit.data.strip()
-        db.session.commit()
-        flash("Product updated.", "success")
-        return redirect(url_for("products.index"))
+        name = form.name.data.strip()
+        existing = Product.query.filter(
+            Product.user_id == current_user.id,
+            Product.name == name,
+            Product.id != product_id,
+        ).first()
+        if existing:
+            flash(f"A product named '{name}' already exists.", "danger")
+        else:
+            product.name = name
+            product.description = (form.description.data or "").strip() or None
+            product.hsn_sac = (form.hsn_sac.data or "").strip() or None
+            product.price = form.price.data
+            product.gst_rate = form.gst_rate.data
+            product.unit = form.unit.data.strip()
+            try:
+                db.session.commit()
+                flash("Product updated.", "success")
+                return redirect(url_for("products.index"))
+            except Exception:
+                db.session.rollback()
+                flash(f"A product named '{name}' already exists.", "danger")
 
     return render_template("products/edit.html", form=form, product=product)
 
