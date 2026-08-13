@@ -42,6 +42,10 @@ class Config:
     ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
     WTF_CSRF_TIME_LIMIT = None
 
+    # Razorpay Gateway Configuration
+    RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_test_TPB0DS6qkyq6PJ")
+    RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "XEZxF9ebnFg6ofGSc8evy3Eg")
+
     # Email / SMTP
     MAIL_SERVER = os.getenv("MAIL_SERVER", "")
     MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
