@@ -45,7 +45,7 @@
                 <button class="btn btn-ghost btn-sm">Duplicate</button>
             </form>
 
-            <a href="{{ url_for('invoices.public_view', token=invoice.share_token) }}" target="_blank" class="btn btn-primary btn-sm" style="background:linear-gradient(135deg, #3b82f6, #1d4ed8);color:#fff">🌐 Open Client Pay Link (Razorpay)</a>
+            <a href="{{ url_for('invoices.public_view', token=invoice.share_token) }}" target="_blank" class="btn btn-primary btn-sm" style="background:linear-gradient(135deg, #3b82f6, #1d4ed8);color:#fff">🌐 Open Client Pay Link</a>
             <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText('{{ url_for('invoices.public_view', token=invoice.share_token, _external=True) }}'); alert('Client Link copied to clipboard!')">🔗 Copy Link</button>
             <button class="btn btn-secondary btn-sm" onclick="document.getElementById('emailModal').classList.add('open')">✉ Email</button>
             <a href="{{ url_for('invoices.whatsapp_share', invoice_id=invoice.id) }}" class="btn btn-ghost btn-sm" target="_blank">💬 WhatsApp</a>
