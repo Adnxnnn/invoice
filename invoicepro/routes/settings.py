@@ -45,6 +45,8 @@ def index():
             settings.default_currency = form.default_currency.data
             settings.default_tax_rate = form.default_tax_rate.data
             settings.payment_instructions = (form.payment_instructions.data or "").strip() or None
+            settings.upi_id = (form.upi_id.data or "").strip() or None
+            settings.upi_name = (form.upi_name.data or "").strip() or None
             settings.footer_text = (form.footer_text.data or "").strip() or None
             settings.tax_information = (form.tax_information.data or "").strip() or None
             settings.company_logo = _save_optional_upload(

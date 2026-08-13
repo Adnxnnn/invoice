@@ -70,6 +70,8 @@ class CompanySettings(TimestampMixin, db.Model):
     default_tax_rate = db.Column(db.Numeric(5, 2), nullable=False, default=18)
     payment_instructions = db.Column(db.Text)
     footer_text = db.Column(db.Text)
+    upi_id = db.Column(db.String(100))
+    upi_name = db.Column(db.String(255))
 
     user = db.relationship("User", back_populates="company_settings")
 
@@ -190,6 +192,26 @@ class Invoice(TimestampMixin, db.Model):
             return
         elif paid > 0 or Decimal(self.total_amount or 0) > 0:
             self.status = "Pending"
+
+    @property
+    def upi_payment_url(self):
+        settings = self.user.company_settings if self.user else None
+        if not settings or not settings.upi_id:
+            return None
+        import urllib.parse
+        name = urllib.parse.quote(settings.upi_name or settings.company_name or "Invoice Payment")
+        amt = self.balance_due if self.balance_due > 0 else self.total_amount
+        note = urllib.parse.quote(f"Invoice {self.invoice_number}")
+        return f"upi://pay?pa={settings.upi_id}&pn={name}&am={amt}&cu={self.currency or 'INR'}&tn={note}"
+
+    @property
+    def upi_qr_code_url(self):
+        url = self.upi_payment_url
+        if not url:
+            return None
+        import urllib.parse
+        encoded = urllib.parse.quote(url)
+        return f"https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={encoded}"
 
 
 class InvoiceItem(TimestampMixin, db.Model):

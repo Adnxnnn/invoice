@@ -225,6 +225,8 @@ class CompanySettingsForm(FlaskForm):
         default="18",
     )
     payment_instructions = TextAreaField("Payment instructions", validators=[Optional(), Length(max=2000)])
+    upi_id = StringField("UPI VPA / ID (e.g. name@upi, 9876543210@paytm)", validators=[Optional(), Length(max=100)])
+    upi_name = StringField("UPI Payee Name (e.g. Business Name)", validators=[Optional(), Length(max=255)])
     footer_text = TextAreaField("Invoice footer text", validators=[Optional(), Length(max=500)])
     tax_information = TextAreaField("Business / Tax notes", validators=[Optional(), Length(max=1000)])
     logo = FileField("Company logo (PNG/JPG/WEBP)")

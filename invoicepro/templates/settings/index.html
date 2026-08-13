@@ -42,9 +42,22 @@
                 <label><span>{{ form.default_tax_rate.label.text }}</span>{{ form.default_tax_rate() }}</label>
             </div>
 
+            <h3 style="margin:24px 0 14px">⚡ Direct UPI Gateway (GPay / PhonePe / Paytm / BHIM)</h3>
+            <div class="form-grid two-col" style="margin-top:0">
+                <label>
+                    <span>{{ form.upi_id.label.text }}</span>
+                    {{ form.upi_id(placeholder="e.g. merchant@okicici, 9876543210@paytm") }}
+                    <span class="helper">Clients can scan dynamic QR code or tap to pay directly to this UPI ID</span>
+                </label>
+                <label>
+                    <span>{{ form.upi_name.label.text }}</span>
+                    {{ form.upi_name(placeholder="e.g. Your Business Name") }}
+                </label>
+            </div>
+
             <h3 style="margin:24px 0 14px">Invoice Footer & Notes</h3>
             <div class="form-grid" style="margin-top:0">
-                <label><span>{{ form.payment_instructions.label.text }}</span>{{ form.payment_instructions(rows="3", placeholder="Bank account details, UPI ID, payment link...") }}</label>
+                <label><span>{{ form.payment_instructions.label.text }}</span>{{ form.payment_instructions(rows="3", placeholder="Bank account details, payment terms...") }}</label>
                 <label><span>{{ form.footer_text.label.text }}</span>{{ form.footer_text(rows="2", placeholder="Thank you for your business!") }}</label>
                 <label><span>{{ form.tax_information.label.text }}</span>{{ form.tax_information(rows="2", placeholder="GST/PAN information, jurisdiction...") }}</label>
             </div>
