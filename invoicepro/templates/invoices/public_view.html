@@ -118,6 +118,7 @@
             {% endif %}
             {% if invoice.status not in ['Paid', 'Cancelled'] %}
             <form method="post" action="{{ url_for('invoices.public_confirm_payment', token=invoice.share_token) }}" style="display:inline" onsubmit="return confirm('Confirm that you have completed payment for this invoice?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-pay" style="background:linear-gradient(135deg, #2ed89a, #00b875);color:#052014">✓ Confirm Payment</button>
             </form>
             {% endif %}

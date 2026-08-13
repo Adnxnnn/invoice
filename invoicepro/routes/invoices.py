@@ -265,7 +265,11 @@ def public_view(token):
     return render_template("invoices/public_view.html", invoice=invoice, template_name=tmpl)
 
 
+from invoicepro.extensions import csrf
+
+
 @invoices_bp.post("/public/<token>/confirm-payment")
+@csrf.exempt
 def public_confirm_payment(token):
     invoice = Invoice.query.filter_by(share_token=token).first_or_404()
     if invoice.status != "Paid":
