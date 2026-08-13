@@ -23,10 +23,16 @@ def create_app(config_object=DevelopmentConfig):
 
 
 def _ensure_directories(app):
-    Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+    try:
+        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
     for key in ("UPLOAD_FOLDER", "LOGO_UPLOAD_FOLDER", "SIGNATURE_UPLOAD_FOLDER",
                 "GENERATED_INVOICES_FOLDER"):
-        Path(app.config[key]).mkdir(parents=True, exist_ok=True)
+        try:
+            Path(app.config[key]).mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
 
 
 def _register_extensions(app):
