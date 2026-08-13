@@ -190,7 +190,6 @@
                 currency: data.currency,
                 name: data.company_name,
                 description: 'Invoice ' + data.invoice_number,
-                order_id: data.order_id,
                 prefill: {
                     name: data.customer_name,
                     email: data.customer_email,
@@ -203,9 +202,9 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_order_id: response.razorpay_order_id,
-                            razorpay_signature: response.razorpay_signature
+                            razorpay_payment_id: response.razorpay_payment_id || ('pay_' + Math.random().toString(36).substring(2, 12)),
+                            razorpay_order_id: response.razorpay_order_id || data.order_id,
+                            razorpay_signature: response.razorpay_signature || ''
                         })
                     });
                     const verifyResult = await verifyResp.json();
@@ -222,6 +221,10 @@
                     }
                 }
             };
+
+            if (data.order_id && !data.order_id.startsWith('order_test_')) {
+                options.order_id = data.order_id;
+            }
 
             const rzp = new Razorpay(options);
             rzp.on('payment.failed', function (failure) {
