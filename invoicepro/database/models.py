@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from flask_login import UserMixin
@@ -186,7 +186,7 @@ class Invoice(TimestampMixin, db.Model):
             return
         if paid >= Decimal(self.total_amount or 0) and Decimal(self.total_amount or 0) > 0:
             self.status = "Paid"
-        elif self.due_date < datetime.now(UTC).date() and paid < Decimal(self.total_amount or 0):
+        elif self.due_date < datetime.now(timezone.utc).date() and paid < Decimal(self.total_amount or 0):
             self.status = "Overdue"
         elif self.status in {"Draft", "Sent"}:
             return
