@@ -6,8 +6,19 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: A4; margin: 18mm 16mm; }
-  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #111; background: #fff; font-size: 10.5pt; line-height: 1.55; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #111; background: #fff; font-size: 10.5pt; line-height: 1.55; -webkit-font-smoothing: antialiased; }
   .shell { max-width: 820px; margin: 0 auto; padding: 28px; }
+
+  @media (max-width: 768px) {
+    .shell { padding: 16px 12px !important; }
+    .top { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+    .inv-num { text-align: left !important; }
+    .meta { grid-template-columns: repeat(2, 1fr) !important; }
+    .totals-wrap { justify-content: stretch !important; width: 100% !important; }
+    .totals-box { width: 100% !important; }
+    .footer { flex-direction: column !important; gap: 16px !important; }
+    table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+  }
 
   /* Top strip */
   .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #111; }

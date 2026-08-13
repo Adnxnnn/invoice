@@ -6,8 +6,21 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: A4; margin: 14mm 12mm; }
-  body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; color: #1e1b4b; background: #fff; font-size: 11pt; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #1e1b4b; background: #fff; font-size: 11pt; -webkit-font-smoothing: antialiased; }
   .shell { max-width: 840px; margin: 0 auto; }
+
+  @media (max-width: 768px) {
+    .header { flex-direction: column !important; align-items: flex-start !important; padding: 20px 18px !important; border-radius: 0 0 16px 16px !important; gap: 16px !important; }
+    .inv-right { text-align: left !important; }
+    .body-wrap { padding: 18px 14px !important; }
+    .dates-strip { flex-direction: column !important; }
+    .date-cell { border-right: none !important; border-bottom: 1px solid #e0ddff !important; }
+    .date-cell:last-child { border-bottom: none !important; }
+    .parties { flex-direction: column !important; gap: 16px !important; }
+    .totals-wrap { justify-content: stretch !important; width: 100% !important; }
+    .totals-card { width: 100% !important; }
+    table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+  }
 
   /* Violet gradient header */
   .header { background: linear-gradient(135deg, #6c63ff 0%, #3b34d1 100%); color: #fff; padding: 30px 34px; border-radius: 0 0 28px 28px; display: flex; justify-content: space-between; align-items: flex-start; }
