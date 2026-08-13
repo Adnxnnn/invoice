@@ -446,11 +446,48 @@ def update_status(invoice_id, status):
     invoice.refresh_payment_state()
     if status == "Cancelled":
         invoice.status = "Cancelled"
+        flash(f"Invoice marked as {invoice.status}.", "success")
     elif status == "Paid":
+        if invoice.balance_due > 0:
+            payment = Payment(
+                invoice_id=invoice.id,
+                user_id=invoice.user_id,
+                payment_date=date.today(),
+                amount=invoice.balance_due,
+                payment_method="Admin Confirmation",
+                reference_number=f"ADMIN-{invoice.id}",
+            )
+            db.session.add(payment)
         invoice.amount_paid = invoice.total_amount
         invoice.status = "Paid"
+        flash(f"🎉 Payment confirmed and invoice {invoice.invoice_number} marked as Paid!", "success")
+    else:
+        flash(f"Invoice marked as {invoice.status}.", "success")
     db.session.commit()
-    flash(f"Invoice marked as {invoice.status}.", "success")
+    next_page = request.referrer or url_for("invoices.detail", invoice_id=invoice.id)
+    return redirect(next_page)
+
+
+@invoices_bp.post("/<int:invoice_id>/confirm-payment")
+@login_required
+def admin_confirm_payment(invoice_id):
+    """Mark an invoice as fully paid by an admin."""
+    invoice = _get_owned_invoice(invoice_id)
+    if invoice.status not in {"Paid", "Cancelled"}:
+        if invoice.balance_due > 0:
+            payment = Payment(
+                invoice_id=invoice.id,
+                user_id=invoice.user_id,
+                payment_date=date.today(),
+                amount=invoice.balance_due,
+                payment_method="Admin Confirmation",
+                reference_number=f"ADMIN-{invoice.id}",
+            )
+            db.session.add(payment)
+        invoice.amount_paid = invoice.total_amount
+        invoice.status = "Paid"
+        db.session.commit()
+        flash(f"🎉 Payment confirmed and invoice {invoice.invoice_number} marked as Paid!", "success")
     return redirect(url_for("invoices.detail", invoice_id=invoice.id))
 
 

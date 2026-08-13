@@ -22,9 +22,9 @@
         <div class="inline-actions">
             <!-- Status updater -->
             {% if invoice.status != 'Paid' %}
-            <form method="post" action="{{ url_for('invoices.update_status', invoice_id=invoice.id, status='Paid') }}">
+            <form method="post" action="{{ url_for('invoices.update_status', invoice_id=invoice.id, status='Paid') }}" style="display:inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-success btn-sm">✓ Mark Complete / Paid</button>
+                <button class="btn btn-success" style="background:linear-gradient(135deg, #2ed89a, #00b875);color:#052014;font-weight:700">✓ Confirm Admin Payment</button>
             </form>
             {% endif %}
             <form method="post" action="" id="statusSelectForm" style="display:inline">

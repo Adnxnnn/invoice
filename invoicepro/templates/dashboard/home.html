@@ -156,9 +156,15 @@
                         <td>{{ inv.currency }} {{ "%.2f"|format(inv.total_amount) }}</td>
                         <td>{{ inv.currency }} {{ "%.2f"|format(inv.balance_due) }}</td>
                         <td>
-                            <div class="table-actions">
+                            <div class="table-actions" style="display:flex;gap:4px;align-items:center">
                                 <a href="{{ url_for('invoices.detail', invoice_id=inv.id) }}" class="btn btn-ghost btn-xs">View</a>
                                 <a href="{{ url_for('invoices.download_pdf', invoice_id=inv.id) }}" class="btn btn-ghost btn-xs">PDF</a>
+                                {% if inv.status != 'Paid' %}
+                                <form method="post" action="{{ url_for('invoices.update_status', invoice_id=inv.id, status='Paid') }}" style="display:inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-success btn-xs" style="background:#2ed89a;color:#052014;font-weight:700" title="Confirm Payment">✓ Confirm Payment</button>
+                                </form>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
